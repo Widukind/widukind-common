@@ -123,7 +123,7 @@ def generate_tags(db, doc, doc_type=None,
         dataset = doc_dataset or db[constants.COL_DATASETS].find_one(query)
         
         if not dataset:
-            raise Exception("dataset not found for provider[%(provider)s] - dataset_code[%(dataset_code)s]" % query)
+            raise Exception("dataset not found for provider_name[%(provider_name)s] - dataset_code[%(dataset_code)s]" % query)
 
         select_for_tags.append(doc['provider_name'])
         select_for_tags.append(doc['dataset_code'])
