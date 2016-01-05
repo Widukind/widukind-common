@@ -58,7 +58,7 @@ def create_or_update_indexes(db, force_mode=False):
     
     '''********* DATASETS *********'''
     
-    #TODO: lastUpdate DESCENDING ?
+    #TODO: last_update DESCENDING ?
     db[constants.COL_DATASETS].create_index([
         ("provider", ASCENDING), 
         ("dataset_code", ASCENDING)], 
@@ -77,8 +77,8 @@ def create_or_update_indexes(db, force_mode=False):
         name="tags_idx")
     
     db[constants.COL_DATASETS].create_index([
-        ("lastUpdate", DESCENDING)], 
-        name="lastUpdate_idx")
+        ("last_update", DESCENDING)], 
+        name="last_update_idx")
 
     '''********* SERIES *********'''
 
