@@ -301,7 +301,7 @@ def search_tags(db,
 
         if start_date:
             ordinal_start_date = pandas.Period(start_date, freq=date_freq).ordinal
-            query["startDate"] = {"$gte": ordinal_start_date}
+            query["start_date"] = {"$gte": ordinal_start_date}
         
         if end_date:
             query["endDate"] = {"$lte": pandas.Period(end_date, freq=date_freq).ordinal}

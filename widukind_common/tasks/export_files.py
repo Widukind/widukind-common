@@ -30,7 +30,7 @@ def export_series(series):
     """Export one serie (Period and Frequency only)
     """
     #series = dict (doc mongo)
-    sd = pandas.Period(ordinal=series['startDate'],
+    sd = pandas.Period(ordinal=series['start_date'],
                        freq=series['frequency'])
     values = []
     values.append(["Date", "Value"])
@@ -71,8 +71,8 @@ def export_dataset(db, dataset):
         Permet d'avoir ensuite une plage de date la plus ancienne à la plus récente
         car chaque série n'a pas toujours les mêmes dates
         """
-        if s['startDate'] < dmin:
-            dmin = s['startDate']
+        if s['start_date'] < dmin:
+            dmin = s['start_date']
         if s['endDate'] > dmax:
             dmax = s['endDate']
         freq = s['frequency']
@@ -100,7 +100,7 @@ def export_dataset(db, dataset):
                 row.append('')        
         #['A.CLV05_MEUR.A.B1G.HR', 'A', 'HR', 'B1G', 'A', 'CLV05_MEUR']
         
-        p_start_date = pandas.Period(ordinal=s['startDate'], freq=freq)        
+        p_start_date = pandas.Period(ordinal=s['start_date'], freq=freq)        
         p_end_date = pandas.Period(ordinal=s['endDate'], freq=freq)
         
         #pandas.period_range(p_start_date, p_end_date, freq=freq).to_native_types()
