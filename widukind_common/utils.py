@@ -48,8 +48,8 @@ def create_or_update_indexes(db, force_mode=False):
     
     db[constants.COL_CATEGORIES].create_index([
         ("provider", ASCENDING), 
-        ("categoryCode", ASCENDING)], 
-        name="provider_categoryCode_idx", unique=True)
+        ("category_code", ASCENDING)], 
+        name="provider_category_code_idx", unique=True)
 
     db[constants.COL_CATEGORIES].create_index([
         ("tags", ASCENDING)], 
