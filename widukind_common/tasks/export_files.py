@@ -30,7 +30,7 @@ def export_series(series):
     """Export one serie (Period and Frequency only)
     """
     #series = dict (doc mongo)
-    sd = pandas.Period(ordinal=series['startDate'],
+    sd = pandas.Period(ordinal=series['start_date'],
                        freq=series['frequency'])
     values = []
     values.append(["Date", "Value"])
@@ -48,7 +48,7 @@ def export_dataset(db, dataset):
     
     start = time.time()
     
-    ck = list(dataset['dimensionList'].keys())
+    ck = list(dataset['dimension_list'].keys())
     
     cl = sorted(ck, key=lambda t: t.lower())
     #['freq', 'geo', 'na_item', 'nace_r2', 'unit']
@@ -60,9 +60,9 @@ def export_dataset(db, dataset):
     dmin = float('inf')
     dmax = -float('inf')
 
-    series = db[constants.COL_SERIES].find({"provider": dataset['provider'],
-                                            "datasetCode": dataset['datasetCode']},
-                                           {'revisions': 0, 'releaseDates': 0},
+    series = db[constants.COL_SERIES].find({'provider_name': dataset['provider_name'],
+                                            "dataset_code": dataset['dataset_code']},
+                                           {'revisions': 0, 'release_dates': 0},
                                            )
     
     for s in series:
@@ -71,10 +71,10 @@ def export_dataset(db, dataset):
         Permet d'avoir ensuite une plage de date la plus ancienne à la plus récente
         car chaque série n'a pas toujours les mêmes dates
         """
-        if s['startDate'] < dmin:
-            dmin = s['startDate']
-        if s['endDate'] > dmax:
-            dmax = s['endDate']
+        if s['start_date'] < dmin:
+            dmin = s['start_date']
+        if s['end_date'] > dmax:
+            dmax = s['end_date']
         freq = s['frequency']
         
     series.rewind()
@@ -100,8 +100,8 @@ def export_dataset(db, dataset):
                 row.append('')        
         #['A.CLV05_MEUR.A.B1G.HR', 'A', 'HR', 'B1G', 'A', 'CLV05_MEUR']
         
-        p_start_date = pandas.Period(ordinal=s['startDate'], freq=freq)        
-        p_end_date = pandas.Period(ordinal=s['endDate'], freq=freq)
+        p_start_date = pandas.Period(ordinal=s['start_date'], freq=freq)        
+        p_end_date = pandas.Period(ordinal=s['end_date'], freq=freq)
         
         #pandas.period_range(p_start_date, p_end_date, freq=freq).to_native_types()
         """
@@ -141,7 +141,7 @@ def export_dataset(db, dataset):
     #    elements.append(g.value)
     
     end = time.time() - start
-    logger.info("export_dataset - %s : %.3f" % (dataset['datasetCode'], end))
+    logger.info("export_dataset - %s : %.3f" % (dataset['dataset_code'], end))
     
     return elements
 
@@ -170,8 +170,8 @@ def record_csv_file(db, values, provider_name=None, dataset_code=None, key=None,
 
     metadata = {
         "doc_type": prefix,
-        "provider": provider_name,
-        "datasetCode": dataset_code
+        'provider_name': provider_name,
+        "dataset_code": dataset_code
     }
     if key: metadata['key'] = key    
 
@@ -206,8 +206,8 @@ def export_file_csv_series_unit(doc=None, provider=None, dataset_code=None, key=
             raise ValueError("key is required")
 
         query = {}
-        query['provider'] = provider
-        query['datasetCode'] = dataset_code
+        query['provider_name'] = provider
+        query['dataset_code'] = dataset_code
         query['key'] = key
     
         doc = db[constants.COL_SERIES].find_one(query,{'revisions': 0})
@@ -219,8 +219,8 @@ def export_file_csv_series_unit(doc=None, provider=None, dataset_code=None, key=
 
     return record_csv_file(db,
                          values, 
-                         provider_name=doc['provider'],
-                         dataset_code=doc["datasetCode"],
+                         provider_name=doc['provider_name'],
+                         dataset_code=doc["dataset_code"],
                          key=doc["key"], 
                          prefix="series")
 
@@ -237,8 +237,8 @@ def export_file_csv_dataset_unit(doc=None, provider=None, dataset_code=None):
             raise ValueError("dataset_code is required")
     
         query = {}
-        query['provider'] = provider
-        query['datasetCode'] = dataset_code
+        query['provider_name'] = provider
+        query['dataset_code'] = dataset_code
     
         doc = db[constants.COL_DATASETS].find_one(query, {'revisions': 0})
     
@@ -249,8 +249,8 @@ def export_file_csv_dataset_unit(doc=None, provider=None, dataset_code=None):
     
     id = record_csv_file(db,
                          values, 
-                         provider_name=doc['provider'],
-                         dataset_code=doc["datasetCode"], 
+                         provider_name=doc['provider_name'],
+                         dataset_code=doc["dataset_code"], 
                          prefix="dataset")
     return id
 
@@ -262,9 +262,9 @@ def export_file_csv_dataset(provider=None, dataset_code=None):
     
     query = {}
     if provider:
-        query['provider'] = provider
+        query['provider_name'] = provider
     if dataset_code:
-        query['datasetCode'] = dataset_code
+        query['dataset_code'] = dataset_code
 
     datasets = db[constants.COL_DATASETS].find(query,
                                {'revisions': 0})

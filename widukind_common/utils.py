@@ -47,9 +47,9 @@ def create_or_update_indexes(db, force_mode=False):
     '''********* CATEGORIES *******'''
     
     db[constants.COL_CATEGORIES].create_index([
-        ("provider", ASCENDING), 
-        ("categoryCode", ASCENDING)], 
-        name="provider_categoryCode_idx", unique=True)
+        ('provider_name', ASCENDING), 
+        ("category_code", ASCENDING)], 
+        name="provider_category_code_idx", unique=True)
 
     db[constants.COL_CATEGORIES].create_index([
         ("tags", ASCENDING)], 
@@ -58,11 +58,11 @@ def create_or_update_indexes(db, force_mode=False):
     
     '''********* DATASETS *********'''
     
-    #TODO: lastUpdate DESCENDING ?
+    #TODO: last_update DESCENDING ?
     db[constants.COL_DATASETS].create_index([
-        ("provider", ASCENDING), 
-        ("datasetCode", ASCENDING)], 
-        name="provider_datasetCode_idx", unique=True)
+        ('provider_name', ASCENDING), 
+        ("dataset_code", ASCENDING)], 
+        name="provider_dataset_code_idx", unique=True)
 
     db[constants.COL_DATASETS].create_index([
         ("slug", ASCENDING)], 
@@ -77,16 +77,16 @@ def create_or_update_indexes(db, force_mode=False):
         name="tags_idx")
     
     db[constants.COL_DATASETS].create_index([
-        ("lastUpdate", DESCENDING)], 
-        name="lastUpdate_idx")
+        ("last_update", DESCENDING)], 
+        name="last_update_idx")
 
     '''********* SERIES *********'''
 
     db[constants.COL_SERIES].create_index([
-        ("provider", ASCENDING), 
-        ("datasetCode", ASCENDING), 
+        ('provider_name', ASCENDING), 
+        ("dataset_code", ASCENDING), 
         ("key", ASCENDING)], 
-        name="provider_datasetCode_key_idx", unique=True)
+        name="provider_dataset_code_key_idx", unique=True)
 
     db[constants.COL_SERIES].create_index([
         ("slug", ASCENDING)], 
@@ -97,16 +97,16 @@ def create_or_update_indexes(db, force_mode=False):
         name="key_idx")
 
     db[constants.COL_SERIES].create_index([
-        ("provider", ASCENDING), 
-        ("datasetCode", ASCENDING)], 
-        name="provider_datasetCode_idx")
+        ('provider_name', ASCENDING), 
+        ("dataset_code", ASCENDING)], 
+        name="provider_dataset_code_idx")
 
     db[constants.COL_SERIES].create_index([
-        ("datasetCode", ASCENDING)], 
-        name="datasetCode_idx")
+        ("dataset_code", ASCENDING)], 
+        name="dataset_code_idx")
 
     db[constants.COL_SERIES].create_index([
-        ("provider", ASCENDING)], 
+        ('provider_name', ASCENDING)], 
         name="provider_idx")    
 
     db[constants.COL_SERIES].create_index([
@@ -122,7 +122,7 @@ def create_or_update_indexes(db, force_mode=False):
         name="frequency_idx")
 
     db[constants.COL_SERIES].create_index([
-        ("provider", ASCENDING), 
+        ('provider_name', ASCENDING), 
         ("tags", ASCENDING), 
         ("frequency", DESCENDING)], 
         name="provider_tags_frequency_idx")

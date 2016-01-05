@@ -77,37 +77,37 @@ def generate_tags(db, doc, doc_type=None,
     select_for_tags = []
     tags = []
     
-    def search_dataset_dimensionList(key, value, dataset_doc):
-        if key in dataset_doc['dimensionList']: 
-            dimensions = dataset_doc['dimensionList'][key]
+    def search_dataset_dimension_list(key, value, dataset_doc):
+        if key in dataset_doc['dimension_list']: 
+            dimensions = dataset_doc['dimension_list'][key]
             for d in dimensions:
                 if value == d[0]:
                     return d[1] 
 
-    def search_dataset_attributeList(key, value, dataset_doc):
-        if key in dataset_doc['attributeList']:
-            attributes = dataset_doc['attributeList'][key]
+    def search_dataset_attribute_list(key, value, dataset_doc):
+        if key in dataset_doc['attribute_list']:
+            attributes = dataset_doc['attribute_list'][key]
             for a in attributes:
                 if value == a[0]:
                     return a[1] 
     
     if doc_type == constants.COL_DATASETS:
 
-        select_for_tags.append(doc['provider'])
-        select_for_tags.append(doc['datasetCode'])
+        select_for_tags.append(doc['provider_name'])
+        select_for_tags.append(doc['dataset_code'])
         select_for_tags.append(doc['name'])
         
         if 'notes' in doc and len(doc['notes'].strip()) > 0: 
             select_for_tags.append(doc['notes'].strip())
         
-        for key, values in doc['dimensionList'].items():            
+        for key, values in doc['dimension_list'].items():            
             #select_for_tags.append(key)        #dimension name:            
             for item in values:               
                 #TODO: dimension key ?
                 #select_for_tags.append(item[0])
                 select_for_tags.append(item[1])
 
-        for key, values in doc['attributeList'].items():            
+        for key, values in doc['attribute_list'].items():            
             #select_for_tags.append(key)        #attribute name:            
             for item in values:            
                 #TODO: attribute key ?
@@ -117,16 +117,16 @@ def generate_tags(db, doc, doc_type=None,
     elif doc_type == constants.COL_SERIES:
 
         query = {
-            "provider": doc['provider'], 
-            "datasetCode": doc['datasetCode']
+            'provider_name': doc['provider_name'], 
+            "dataset_code": doc['dataset_code']
         }        
         dataset = doc_dataset or db[constants.COL_DATASETS].find_one(query)
         
         if not dataset:
-            raise Exception("dataset not found for provider[%(provider)s] - datasetCode[%(datasetCode)s]" % query)
+            raise Exception("dataset not found for provider_name[%(provider_name)s] - dataset_code[%(dataset_code)s]" % query)
 
-        select_for_tags.append(doc['provider'])
-        select_for_tags.append(doc['datasetCode'])
+        select_for_tags.append(doc['provider_name'])
+        select_for_tags.append(doc['dataset_code'])
         select_for_tags.append(doc['key'])
         select_for_tags.append(doc['name'])
         
@@ -136,7 +136,7 @@ def generate_tags(db, doc, doc_type=None,
         for dimension_key, dimension_code in doc['dimensions'].items():
             #select_for_tags.append(dimension_key)
             if dimension_key and dimension_code:
-                dimension_value = search_dataset_dimensionList(dimension_key, 
+                dimension_value = search_dataset_dimension_list(dimension_key, 
                                                                dimension_code, 
                                                                dataset)
                 if dimension_value:            
@@ -145,7 +145,7 @@ def generate_tags(db, doc, doc_type=None,
         for attribute_key, attribute_code in doc['attributes'].items():            
             #select_for_tags.append(attribute_key)
             if attribute_key and attribute_code:
-                attribute_value = search_dataset_attributeList(attribute_key, 
+                attribute_value = search_dataset_attribute_list(attribute_key, 
                                                                attribute_code, 
                                                                dataset)
                 if attribute_value:
@@ -209,20 +209,20 @@ def update_tags(db,
     #TODO: cumul des results bulk
     bulk = db[col_name].initialize_unordered_bulk_op()
     count = 0
-    query = {"provider": provider_name}
+    query = {'provider_name': provider_name}
     projection = None
 
     if dataset_code:
-        query['datasetCode'] = dataset_code
+        query['dataset_code'] = dataset_code
 
     if col_name == constants.COL_DATASETS:
-        projection = {"docHref": False}
+        projection = {"doc_href": False}
     
     if col_name == constants.COL_SERIES and serie_key:
         query['key'] = serie_key
         
     if col_name == constants.COL_SERIES:
-        projection = {"releaseDates": False, "values": False}
+        projection = {"release_dates": False, "values": False}
 
     for doc in db[col_name].find(query, projection=projection):
         #TODO: load dataset doc if search series ?
@@ -268,7 +268,7 @@ def search_tags(db,
     >>> docs = utils.search_series_tags(db, provider_name="Eurostat", dataset_code="nama_10_a10", search_tags=["Belgium", "Euro", "Agriculture"])
     
     #print(docs.count())    
-    #for doc in docs: print(doc['provider'], doc['datasetCode'], doc['key'], doc['name'])
+    #for doc in docs: print(doc['provider_name'], doc['dataset_code'], doc['key'], doc['name'])
     """
     
     '''Convert search tag to lower case and strip tag'''
@@ -284,7 +284,7 @@ def search_tags(db,
             providers = [provider_name]
         else:
             providers = provider_name
-        query['provider'] = {"$in": providers}
+        query['provider_name'] = {"$in": providers}
         
     if search_type == "series":
 
@@ -297,14 +297,14 @@ def search_tags(db,
             date_freq = frequency
                         
         if dataset_code:
-            query['datasetCode'] = dataset_code
+            query['dataset_code'] = dataset_code
 
         if start_date:
             ordinal_start_date = pandas.Period(start_date, freq=date_freq).ordinal
-            query["startDate"] = {"$gte": ordinal_start_date}
+            query["start_date"] = {"$gte": ordinal_start_date}
         
         if end_date:
-            query["endDate"] = {"$lte": pandas.Period(end_date, freq=date_freq).ordinal}
+            query["end_date"] = {"$lte": pandas.Period(end_date, freq=date_freq).ordinal}
 
     else:
         COL_SEARCH = constants.COL_DATASETS
@@ -338,10 +338,10 @@ def _aggregate_tags(db, source_col, target_col, max_bulk=20):
     
     pipeline = [
       {"$match": {"tags.0": {"$exists": True}}},
-      {'$project': { '_id': 0, 'tags': 1, 'provider': 1}},
+      {'$project': { '_id': 0, 'tags': 1, 'provider_name': 1}},
       {"$unwind": "$tags"},
-      {"$group": {"_id": {"tag": "$tags", "provider": "$provider"}, "count": {"$sum": 1}}},
-      {'$project': { 'tag': "$_id.tag", 'count': 1, 'provider': {"name": "$_id.provider", "count": "$count"}}},
+      {"$group": {"_id": {"tag": "$tags", 'provider_name': "$provider"}, "count": {"$sum": 1}}},
+      {'$project': { 'tag': "$_id.tag", 'count': 1, 'provider_name': {"name": "$_id.provider", "count": "$count"}}},
       {"$group": {"_id": "$tag", "count": {"$sum": "$count"}, "providers":{ "$addToSet": "$provider" } }},
       #{"$sort": SON([("count", -1), ("_id", -1)])}      
     ]
