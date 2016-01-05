@@ -48,7 +48,7 @@ def export_dataset(db, dataset):
     
     start = time.time()
     
-    ck = list(dataset['dimensionList'].keys())
+    ck = list(dataset['dimension_list'].keys())
     
     cl = sorted(ck, key=lambda t: t.lower())
     #['freq', 'geo', 'na_item', 'nace_r2', 'unit']

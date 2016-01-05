@@ -77,9 +77,9 @@ def generate_tags(db, doc, doc_type=None,
     select_for_tags = []
     tags = []
     
-    def search_dataset_dimensionList(key, value, dataset_doc):
-        if key in dataset_doc['dimensionList']: 
-            dimensions = dataset_doc['dimensionList'][key]
+    def search_dataset_dimension_list(key, value, dataset_doc):
+        if key in dataset_doc['dimension_list']: 
+            dimensions = dataset_doc['dimension_list'][key]
             for d in dimensions:
                 if value == d[0]:
                     return d[1] 
@@ -100,7 +100,7 @@ def generate_tags(db, doc, doc_type=None,
         if 'notes' in doc and len(doc['notes'].strip()) > 0: 
             select_for_tags.append(doc['notes'].strip())
         
-        for key, values in doc['dimensionList'].items():            
+        for key, values in doc['dimension_list'].items():            
             #select_for_tags.append(key)        #dimension name:            
             for item in values:               
                 #TODO: dimension key ?
@@ -136,7 +136,7 @@ def generate_tags(db, doc, doc_type=None,
         for dimension_key, dimension_code in doc['dimensions'].items():
             #select_for_tags.append(dimension_key)
             if dimension_key and dimension_code:
-                dimension_value = search_dataset_dimensionList(dimension_key, 
+                dimension_value = search_dataset_dimension_list(dimension_key, 
                                                                dimension_code, 
                                                                dataset)
                 if dimension_value:            
