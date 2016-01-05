@@ -84,9 +84,9 @@ def generate_tags(db, doc, doc_type=None,
                 if value == d[0]:
                     return d[1] 
 
-    def search_dataset_attributeList(key, value, dataset_doc):
-        if key in dataset_doc['attributeList']:
-            attributes = dataset_doc['attributeList'][key]
+    def search_dataset_attribute_list(key, value, dataset_doc):
+        if key in dataset_doc['attribute_list']:
+            attributes = dataset_doc['attribute_list'][key]
             for a in attributes:
                 if value == a[0]:
                     return a[1] 
@@ -107,7 +107,7 @@ def generate_tags(db, doc, doc_type=None,
                 #select_for_tags.append(item[0])
                 select_for_tags.append(item[1])
 
-        for key, values in doc['attributeList'].items():            
+        for key, values in doc['attribute_list'].items():            
             #select_for_tags.append(key)        #attribute name:            
             for item in values:            
                 #TODO: attribute key ?
@@ -145,7 +145,7 @@ def generate_tags(db, doc, doc_type=None,
         for attribute_key, attribute_code in doc['attributes'].items():            
             #select_for_tags.append(attribute_key)
             if attribute_key and attribute_code:
-                attribute_value = search_dataset_attributeList(attribute_key, 
+                attribute_value = search_dataset_attribute_list(attribute_key, 
                                                                attribute_code, 
                                                                dataset)
                 if attribute_value:
