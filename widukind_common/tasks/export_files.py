@@ -61,7 +61,7 @@ def export_dataset(db, dataset):
     dmax = -float('inf')
 
     series = db[constants.COL_SERIES].find({"provider": dataset['provider'],
-                                            "datasetCode": dataset['datasetCode']},
+                                            "dataset_code": dataset['dataset_code']},
                                            {'revisions': 0, 'releaseDates': 0},
                                            )
     
@@ -141,7 +141,7 @@ def export_dataset(db, dataset):
     #    elements.append(g.value)
     
     end = time.time() - start
-    logger.info("export_dataset - %s : %.3f" % (dataset['datasetCode'], end))
+    logger.info("export_dataset - %s : %.3f" % (dataset['dataset_code'], end))
     
     return elements
 
@@ -171,7 +171,7 @@ def record_csv_file(db, values, provider_name=None, dataset_code=None, key=None,
     metadata = {
         "doc_type": prefix,
         "provider": provider_name,
-        "datasetCode": dataset_code
+        "dataset_code": dataset_code
     }
     if key: metadata['key'] = key    
 
@@ -207,7 +207,7 @@ def export_file_csv_series_unit(doc=None, provider=None, dataset_code=None, key=
 
         query = {}
         query['provider'] = provider
-        query['datasetCode'] = dataset_code
+        query['dataset_code'] = dataset_code
         query['key'] = key
     
         doc = db[constants.COL_SERIES].find_one(query,{'revisions': 0})
@@ -220,7 +220,7 @@ def export_file_csv_series_unit(doc=None, provider=None, dataset_code=None, key=
     return record_csv_file(db,
                          values, 
                          provider_name=doc['provider'],
-                         dataset_code=doc["datasetCode"],
+                         dataset_code=doc["dataset_code"],
                          key=doc["key"], 
                          prefix="series")
 
@@ -238,7 +238,7 @@ def export_file_csv_dataset_unit(doc=None, provider=None, dataset_code=None):
     
         query = {}
         query['provider'] = provider
-        query['datasetCode'] = dataset_code
+        query['dataset_code'] = dataset_code
     
         doc = db[constants.COL_DATASETS].find_one(query, {'revisions': 0})
     
@@ -250,7 +250,7 @@ def export_file_csv_dataset_unit(doc=None, provider=None, dataset_code=None):
     id = record_csv_file(db,
                          values, 
                          provider_name=doc['provider'],
-                         dataset_code=doc["datasetCode"], 
+                         dataset_code=doc["dataset_code"], 
                          prefix="dataset")
     return id
 
@@ -264,7 +264,7 @@ def export_file_csv_dataset(provider=None, dataset_code=None):
     if provider:
         query['provider'] = provider
     if dataset_code:
-        query['datasetCode'] = dataset_code
+        query['dataset_code'] = dataset_code
 
     datasets = db[constants.COL_DATASETS].find(query,
                                {'revisions': 0})

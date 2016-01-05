@@ -94,7 +94,7 @@ def generate_tags(db, doc, doc_type=None,
     if doc_type == constants.COL_DATASETS:
 
         select_for_tags.append(doc['provider'])
-        select_for_tags.append(doc['datasetCode'])
+        select_for_tags.append(doc['dataset_code'])
         select_for_tags.append(doc['name'])
         
         if 'notes' in doc and len(doc['notes'].strip()) > 0: 
@@ -118,15 +118,15 @@ def generate_tags(db, doc, doc_type=None,
 
         query = {
             "provider": doc['provider'], 
-            "datasetCode": doc['datasetCode']
+            "dataset_code": doc['dataset_code']
         }        
         dataset = doc_dataset or db[constants.COL_DATASETS].find_one(query)
         
         if not dataset:
-            raise Exception("dataset not found for provider[%(provider)s] - datasetCode[%(datasetCode)s]" % query)
+            raise Exception("dataset not found for provider[%(provider)s] - dataset_code[%(dataset_code)s]" % query)
 
         select_for_tags.append(doc['provider'])
-        select_for_tags.append(doc['datasetCode'])
+        select_for_tags.append(doc['dataset_code'])
         select_for_tags.append(doc['key'])
         select_for_tags.append(doc['name'])
         
@@ -213,7 +213,7 @@ def update_tags(db,
     projection = None
 
     if dataset_code:
-        query['datasetCode'] = dataset_code
+        query['dataset_code'] = dataset_code
 
     if col_name == constants.COL_DATASETS:
         projection = {"docHref": False}
@@ -268,7 +268,7 @@ def search_tags(db,
     >>> docs = utils.search_series_tags(db, provider_name="Eurostat", dataset_code="nama_10_a10", search_tags=["Belgium", "Euro", "Agriculture"])
     
     #print(docs.count())    
-    #for doc in docs: print(doc['provider'], doc['datasetCode'], doc['key'], doc['name'])
+    #for doc in docs: print(doc['provider'], doc['dataset_code'], doc['key'], doc['name'])
     """
     
     '''Convert search tag to lower case and strip tag'''
@@ -297,7 +297,7 @@ def search_tags(db,
             date_freq = frequency
                         
         if dataset_code:
-            query['datasetCode'] = dataset_code
+            query['dataset_code'] = dataset_code
 
         if start_date:
             ordinal_start_date = pandas.Period(start_date, freq=date_freq).ordinal

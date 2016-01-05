@@ -61,8 +61,8 @@ def create_or_update_indexes(db, force_mode=False):
     #TODO: lastUpdate DESCENDING ?
     db[constants.COL_DATASETS].create_index([
         ("provider", ASCENDING), 
-        ("datasetCode", ASCENDING)], 
-        name="provider_datasetCode_idx", unique=True)
+        ("dataset_code", ASCENDING)], 
+        name="provider_dataset_code_idx", unique=True)
 
     db[constants.COL_DATASETS].create_index([
         ("slug", ASCENDING)], 
@@ -84,9 +84,9 @@ def create_or_update_indexes(db, force_mode=False):
 
     db[constants.COL_SERIES].create_index([
         ("provider", ASCENDING), 
-        ("datasetCode", ASCENDING), 
+        ("dataset_code", ASCENDING), 
         ("key", ASCENDING)], 
-        name="provider_datasetCode_key_idx", unique=True)
+        name="provider_dataset_code_key_idx", unique=True)
 
     db[constants.COL_SERIES].create_index([
         ("slug", ASCENDING)], 
@@ -98,12 +98,12 @@ def create_or_update_indexes(db, force_mode=False):
 
     db[constants.COL_SERIES].create_index([
         ("provider", ASCENDING), 
-        ("datasetCode", ASCENDING)], 
-        name="provider_datasetCode_idx")
+        ("dataset_code", ASCENDING)], 
+        name="provider_dataset_code_idx")
 
     db[constants.COL_SERIES].create_index([
-        ("datasetCode", ASCENDING)], 
-        name="datasetCode_idx")
+        ("dataset_code", ASCENDING)], 
+        name="dataset_code_idx")
 
     db[constants.COL_SERIES].create_index([
         ("provider", ASCENDING)], 
