@@ -93,7 +93,7 @@ def generate_tags(db, doc, doc_type=None,
     
     if doc_type == constants.COL_DATASETS:
 
-        select_for_tags.append(doc['provider'])
+        select_for_tags.append(doc['provider_name'])
         select_for_tags.append(doc['dataset_code'])
         select_for_tags.append(doc['name'])
         
@@ -117,7 +117,7 @@ def generate_tags(db, doc, doc_type=None,
     elif doc_type == constants.COL_SERIES:
 
         query = {
-            "provider": doc['provider'], 
+            'provider_name': doc['provider_name'], 
             "dataset_code": doc['dataset_code']
         }        
         dataset = doc_dataset or db[constants.COL_DATASETS].find_one(query)
@@ -125,7 +125,7 @@ def generate_tags(db, doc, doc_type=None,
         if not dataset:
             raise Exception("dataset not found for provider[%(provider)s] - dataset_code[%(dataset_code)s]" % query)
 
-        select_for_tags.append(doc['provider'])
+        select_for_tags.append(doc['provider_name'])
         select_for_tags.append(doc['dataset_code'])
         select_for_tags.append(doc['key'])
         select_for_tags.append(doc['name'])
@@ -209,7 +209,7 @@ def update_tags(db,
     #TODO: cumul des results bulk
     bulk = db[col_name].initialize_unordered_bulk_op()
     count = 0
-    query = {"provider": provider_name}
+    query = {'provider_name': provider_name}
     projection = None
 
     if dataset_code:
@@ -268,7 +268,7 @@ def search_tags(db,
     >>> docs = utils.search_series_tags(db, provider_name="Eurostat", dataset_code="nama_10_a10", search_tags=["Belgium", "Euro", "Agriculture"])
     
     #print(docs.count())    
-    #for doc in docs: print(doc['provider'], doc['dataset_code'], doc['key'], doc['name'])
+    #for doc in docs: print(doc['provider_name'], doc['dataset_code'], doc['key'], doc['name'])
     """
     
     '''Convert search tag to lower case and strip tag'''
@@ -284,7 +284,7 @@ def search_tags(db,
             providers = [provider_name]
         else:
             providers = provider_name
-        query['provider'] = {"$in": providers}
+        query['provider_name'] = {"$in": providers}
         
     if search_type == "series":
 
@@ -338,10 +338,10 @@ def _aggregate_tags(db, source_col, target_col, max_bulk=20):
     
     pipeline = [
       {"$match": {"tags.0": {"$exists": True}}},
-      {'$project': { '_id': 0, 'tags': 1, 'provider': 1}},
+      {'$project': { '_id': 0, 'tags': 1, 'provider_name': 1}},
       {"$unwind": "$tags"},
-      {"$group": {"_id": {"tag": "$tags", "provider": "$provider"}, "count": {"$sum": 1}}},
-      {'$project': { 'tag': "$_id.tag", 'count': 1, 'provider': {"name": "$_id.provider", "count": "$count"}}},
+      {"$group": {"_id": {"tag": "$tags", 'provider_name': "$provider"}, "count": {"$sum": 1}}},
+      {'$project': { 'tag': "$_id.tag", 'count': 1, 'provider_name': {"name": "$_id.provider", "count": "$count"}}},
       {"$group": {"_id": "$tag", "count": {"$sum": "$count"}, "providers":{ "$addToSet": "$provider" } }},
       #{"$sort": SON([("count", -1), ("_id", -1)])}      
     ]
