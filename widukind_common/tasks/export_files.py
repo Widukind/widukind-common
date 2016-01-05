@@ -73,8 +73,8 @@ def export_dataset(db, dataset):
         """
         if s['start_date'] < dmin:
             dmin = s['start_date']
-        if s['endDate'] > dmax:
-            dmax = s['endDate']
+        if s['end_date'] > dmax:
+            dmax = s['end_date']
         freq = s['frequency']
         
     series.rewind()
@@ -101,7 +101,7 @@ def export_dataset(db, dataset):
         #['A.CLV05_MEUR.A.B1G.HR', 'A', 'HR', 'B1G', 'A', 'CLV05_MEUR']
         
         p_start_date = pandas.Period(ordinal=s['start_date'], freq=freq)        
-        p_end_date = pandas.Period(ordinal=s['endDate'], freq=freq)
+        p_end_date = pandas.Period(ordinal=s['end_date'], freq=freq)
         
         #pandas.period_range(p_start_date, p_end_date, freq=freq).to_native_types()
         """

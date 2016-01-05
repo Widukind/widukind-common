@@ -304,7 +304,7 @@ def search_tags(db,
             query["start_date"] = {"$gte": ordinal_start_date}
         
         if end_date:
-            query["endDate"] = {"$lte": pandas.Period(end_date, freq=date_freq).ordinal}
+            query["end_date"] = {"$lte": pandas.Period(end_date, freq=date_freq).ordinal}
 
     else:
         COL_SEARCH = constants.COL_DATASETS
