@@ -222,7 +222,7 @@ def update_tags(db,
         query['key'] = serie_key
         
     if col_name == constants.COL_SERIES:
-        projection = {"releaseDates": False, "values": False}
+        projection = {"release_dates": False, "values": False}
 
     for doc in db[col_name].find(query, projection=projection):
         #TODO: load dataset doc if search series ?

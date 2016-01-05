@@ -62,7 +62,7 @@ def export_dataset(db, dataset):
 
     series = db[constants.COL_SERIES].find({"provider": dataset['provider'],
                                             "dataset_code": dataset['dataset_code']},
-                                           {'revisions': 0, 'releaseDates': 0},
+                                           {'revisions': 0, 'release_dates': 0},
                                            )
     
     for s in series:
