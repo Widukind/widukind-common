@@ -216,7 +216,7 @@ def update_tags(db,
         query['dataset_code'] = dataset_code
 
     if col_name == constants.COL_DATASETS:
-        projection = {"docHref": False}
+        projection = {"doc_href": False}
     
     if col_name == constants.COL_SERIES and serie_key:
         query['key'] = serie_key
