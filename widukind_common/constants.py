@@ -38,10 +38,11 @@ COL_ALL = [
 ]
 
 FREQ_ANNUALY = "A"
-FREQ_MONTHLY = "M"
 FREQ_QUATERLY = "Q"
+FREQ_MONTHLY = "M"
 FREQ_WEEKLY = "W"
 FREQ_DAILY = "D"
+FREQ_HOURLY = "H"
 
 FREQUENCIES = (
     (FREQ_ANNUALY, "Annualy"),
@@ -49,10 +50,12 @@ FREQUENCIES = (
     (FREQ_QUATERLY, "Quaterly"),
     (FREQ_WEEKLY, "Weekly"),
     (FREQ_DAILY, "Daily"),
+    (FREQ_HOURLY, "Hourly"),
 )
 
 FREQUENCIES_DICT = dict(FREQUENCIES)
 
+"""
 FREQUENCIES_CONVERT = {
     'Annualy': 'A',
     'annualy': 'A',
@@ -64,12 +67,16 @@ FREQUENCIES_CONVERT = {
     'weekly': 'W',
     'Daily': 'D',
     'daily': 'D',
+    'Hourly': 'H',
+    'hourly': 'H',
     'a': 'A',
-    'd': 'D',
-    'm': 'M',
     'q': 'Q',
+    'm': 'M',
     'w': 'W',
+    'd': 'D',
+    'h': 'H',
 }
+"""
 
 TAGS_EXCLUDE_WORDS = [
     "the",

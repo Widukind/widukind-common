@@ -54,7 +54,18 @@ def create_or_update_indexes(db, force_mode=False):
     db[constants.COL_CATEGORIES].create_index([
         ("tags", ASCENDING)], 
         name="tags_idx")
-         
+
+    db[constants.COL_CATEGORIES].create_index([
+        ("parent", ASCENDING)], 
+        name="parent_idx")
+
+    db[constants.COL_CATEGORIES].create_index([
+        ("slug", ASCENDING)], 
+        name="slug_idx", unique=True)
+
+    db[constants.COL_CATEGORIES].create_index([
+        ("datasets.dataset_code", ASCENDING)], 
+        name="dataset_code_idx")
     
     '''********* DATASETS *********'''
     
@@ -107,7 +118,7 @@ def create_or_update_indexes(db, force_mode=False):
 
     db[constants.COL_SERIES].create_index([
         ('provider_name', ASCENDING)], 
-        name="provider_idx")    
+        name="provider_idx")
 
     db[constants.COL_SERIES].create_index([
         ("tags", ASCENDING)], 
@@ -126,6 +137,10 @@ def create_or_update_indexes(db, force_mode=False):
         ("tags", ASCENDING), 
         ("frequency", DESCENDING)], 
         name="provider_tags_frequency_idx")
+
+    db[constants.COL_SERIES].create_index([
+        ("values.revisions", ASCENDING)], 
+        name="valuesrevisions_idx")
 
     '''********* TAGS ***********'''
 

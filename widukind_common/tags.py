@@ -101,7 +101,6 @@ def generate_tags(db, doc, doc_type=None,
             select_for_tags.append(doc['notes'].strip())
         
         for key, values in doc['dimension_list'].items():            
-            #select_for_tags.append(key)        #dimension name:            
             for item in values:               
                 #TODO: dimension key ?
                 #select_for_tags.append(item[0])
@@ -133,23 +132,25 @@ def generate_tags(db, doc, doc_type=None,
         if 'notes' in doc and len(doc['notes'].strip()) > 0: 
             select_for_tags.append(doc['notes'].strip())
 
-        for dimension_key, dimension_code in doc['dimensions'].items():
-            #select_for_tags.append(dimension_key)
-            if dimension_key and dimension_code:
-                dimension_value = search_dataset_dimension_list(dimension_key, 
-                                                               dimension_code, 
-                                                               dataset)
-                if dimension_value:            
-                    select_for_tags.append(dimension_value)
+        if doc['dimensions']:
+            for dimension_key, dimension_code in doc['dimensions'].items():
+                #select_for_tags.append(dimension_key)
+                if dimension_key and dimension_code:
+                    dimension_value = search_dataset_dimension_list(dimension_key, 
+                                                                   dimension_code, 
+                                                                   dataset)
+                    if dimension_value:            
+                        select_for_tags.append(dimension_value)
 
-        for attribute_key, attribute_code in doc['attributes'].items():            
-            #select_for_tags.append(attribute_key)
-            if attribute_key and attribute_code:
-                attribute_value = search_dataset_attribute_list(attribute_key, 
-                                                               attribute_code, 
-                                                               dataset)
-                if attribute_value:
-                    select_for_tags.append(attribute_value)
+        if doc['attributes']:
+            for attribute_key, attribute_code in doc['attributes'].items():            
+                #select_for_tags.append(attribute_key)
+                if attribute_key and attribute_code:
+                    attribute_value = search_dataset_attribute_list(attribute_key, 
+                                                                   attribute_code, 
+                                                                   dataset)
+                    if attribute_value:
+                        select_for_tags.append(attribute_value)
 
     for value in select_for_tags:
         tags.extend(str_to_tags(value))

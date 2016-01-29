@@ -13,10 +13,13 @@ from widukind_common import constants
 
 logger = logging.getLogger(__name__)
 
-def generate_filename(provider_name=None, dataset_code=None, key=None, prefix=None):
+def generate_filename(provider_name=None, dataset_code=None, key=None, 
+                      slug=None, prefix=None):
     """Generate filename for file (csv, pdf, ...)
     """    
-    if key:
+    if slug:
+        filename = "widukind-%s-%s" % (prefix, slug)
+    elif key:
         filename = "widukind-%s-%s-%s-%s" % (prefix, provider_name, dataset_code, key)
     else:
         filename = "widukind-%s-%s-%s" % (prefix, provider_name, dataset_code)
@@ -30,13 +33,10 @@ def export_series(series):
     """Export one serie (Period and Frequency only)
     """
     #series = dict (doc mongo)
-    sd = pandas.Period(ordinal=series['start_date'],
-                       freq=series['frequency'])
     values = []
-    values.append(["Date", "Value"])
+    values.append(["Period", "Value"])
     for val in series['values']:
-        values.append([str(sd), val])
-        sd += 1
+        values.append([val["period"], val["value"]])
     return values
 
 def export_dataset(db, dataset):
@@ -60,12 +60,12 @@ def export_dataset(db, dataset):
     dmin = float('inf')
     dmax = -float('inf')
 
-    series = db[constants.COL_SERIES].find({'provider_name': dataset['provider_name'],
+    series_list = db[constants.COL_SERIES].find({'provider_name': dataset['provider_name'],
                                             "dataset_code": dataset['dataset_code']},
-                                           {'revisions': 0, 'release_dates': 0},
+                                           #{'revisions': 0, 'release_dates': 0},
                                            )
     
-    for s in series:
+    for s in series_list:
         #collect la première et dernière date trouvé
         """
         Permet d'avoir ensuite une plage de date la plus ancienne à la plus récente
@@ -77,7 +77,7 @@ def export_dataset(db, dataset):
             dmax = s['end_date']
         freq = s['frequency']
         
-    series.rewind()
+    series_list.rewind()
 
     pDmin = pandas.Period(ordinal=dmin, freq=freq);
     pDmax = pandas.Period(ordinal=dmax, freq=freq);
@@ -86,10 +86,8 @@ def export_dataset(db, dataset):
 
     elements = [headers]
     
-    series.rewind()
+    series_list.rewind()
     
-    series_count = series.count()
-
     def row_process(s):
         row = [s['key']]
         
@@ -98,47 +96,33 @@ def export_dataset(db, dataset):
                 row.append(s['dimensions'][c])
             else:
                 row.append('')        
-        #['A.CLV05_MEUR.A.B1G.HR', 'A', 'HR', 'B1G', 'A', 'CLV05_MEUR']
         
         p_start_date = pandas.Period(ordinal=s['start_date'], freq=freq)        
         p_end_date = pandas.Period(ordinal=s['end_date'], freq=freq)
         
-        #pandas.period_range(p_start_date, p_end_date, freq=freq).to_native_types()
         """
         pDmin : pandas.Period() la plus ancienne
         p_start_date-1 : périod en cours -1
             >>> p_start_date -1
             Period('1994', 'A-DEC')
-            
             Bug: ne renvoi rien si
                 p_start_date -1 devient identique à pDmin
         """
 
         # Les None sont pour les périodes qui n'ont pas de valeur correspondantes
-        #row.extend([None for d in pandas.period_range(pDmin, p_start_date-1, freq=freq)])
         _row = [None for d in pandas.period_range(pDmin, p_start_date-1, freq=freq)]
         row.extend(_row)
         
-        #row.extend([val for val in s['values']])
-        _row = [val for val in s['values']]
+        _row = [val["value"] for val in s['values']]
         row.extend(_row)
-        #20 entrée
-        #['1324.7', '1343.7', '1369.5', '1465.4', '1408.5', '1434.1', '1469.0', '1534.6', '1430.5', '1570.0', '1545.9', '1675.4', '1615.0', '1702.7', '1656.8', '1546.8', '1487.7', '1269.7', '1249.7', '1206.0']
-        #row.extend([None for d in pandas.period_range(p_end_date+1, pDmax, freq=freq)])
+
         _row = [None for d in pandas.period_range(p_end_date+1, pDmax, freq=freq)]
         row.extend(_row)
         
-        #print(row)
-
         return row
     
-    #greenlets = []
-    for s in series:
+    for s in series_list:
         elements.append(row_process(s))
-        #greenlets.append(pool.spawn(row_process, s))
-    #pool.join()    
-    #for g in greenlets:
-    #    elements.append(g.value)
     
     end = time.time() - start
     logger.info("export_dataset - %s : %.3f" % (dataset['dataset_code'], end))
@@ -146,7 +130,9 @@ def export_dataset(db, dataset):
     return elements
 
 
-def record_csv_file(db, values, provider_name=None, dataset_code=None, key=None, prefix=None):
+def record_csv_file(db, values, 
+                    provider_name=None, dataset_code=None, key=None, 
+                    slug=None, prefix=None):
     """record gridfs and return mongo id of gridfs entry
     """
     
@@ -164,16 +150,20 @@ def record_csv_file(db, values, provider_name=None, dataset_code=None, key=None,
             writer.writerow(v)
 
     filename = "%s.csv" % generate_filename(provider_name=provider_name, 
-                                 dataset_code=dataset_code, 
-                                 key=key, 
-                                 prefix=prefix)
+                                            dataset_code=dataset_code, 
+                                            key=key,
+                                            slug=slug, 
+                                            prefix=prefix)
 
     metadata = {
         "doc_type": prefix,
         'provider_name': provider_name,
         "dataset_code": dataset_code
     }
-    if key: metadata['key'] = key    
+    if key: 
+        metadata['key'] = key
+    if slug: 
+        metadata['slug'] = slug
 
     grid_in = fs.new_file(filename=filename, 
                           contentType="text/csv", 
@@ -187,42 +177,42 @@ def record_csv_file(db, values, provider_name=None, dataset_code=None, key=None,
         
     grid_in.close()
     return grid_in._id
-    #id = str(grid_in._id)
-    #grid_in = None
-    #return id
 
-def export_file_csv_series_unit(doc=None, provider=None, dataset_code=None, key=None):
+def export_file_csv_series_unit(doc=None, provider=None, dataset_code=None, key=None, slug=None):
     """Create CSV File from one series and record in MongoDB GridFS
     """
 
     db = get_mongo_db()
 
     if not doc:
-        if not provider:
-            raise ValueError("provider is required")
-        if not dataset_code:
-            raise ValueError("dataset_code is required")
-        if not key:
-            raise ValueError("key is required")
-
-        query = {}
-        query['provider_name'] = provider
-        query['dataset_code'] = dataset_code
-        query['key'] = key
+        if slug:
+            doc = db[constants.COL_SERIES].find_one({"slug": slug})
+        else:
+            if not provider:
+                raise ValueError("provider is required")
+            if not dataset_code:
+                raise ValueError("dataset_code is required")
+            if not key:
+                raise ValueError("key is required")
     
-        doc = db[constants.COL_SERIES].find_one(query,{'revisions': 0})
+            query = {}
+            query['provider_name'] = provider
+            query['dataset_code'] = dataset_code
+            query['key'] = key
         
+            doc = db[constants.COL_SERIES].find_one(query)
+            
     if not doc:
         raise Exception("Series not found : %s" % key)
     
     values = export_series(doc)
 
-    return record_csv_file(db,
-                         values, 
-                         provider_name=doc['provider_name'],
-                         dataset_code=doc["dataset_code"],
-                         key=doc["key"], 
-                         prefix="series")
+    return record_csv_file(db, values, 
+                           provider_name=doc['provider_name'],
+                           dataset_code=doc["dataset_code"],
+                           key=doc["key"],
+                           slug=doc["slug"], 
+                           prefix="series")
 
 def export_file_csv_dataset_unit(doc=None, provider=None, dataset_code=None):
     """Create CSV File from one Dataset and record in MongoDB GridFS
@@ -247,32 +237,28 @@ def export_file_csv_dataset_unit(doc=None, provider=None, dataset_code=None):
     
     values = export_dataset(db, doc)
     
-    id = record_csv_file(db,
+    return record_csv_file(db,
                          values, 
                          provider_name=doc['provider_name'],
-                         dataset_code=doc["dataset_code"], 
+                         dataset_code=doc["dataset_code"],
+                         slug=doc["slug"], 
                          prefix="dataset")
-    return id
 
-def export_file_csv_dataset(provider=None, dataset_code=None):
+def export_file_csv_dataset(provider=None, dataset_code=None, slug=None):
     """Create CSV File from one or more Dataset and record in MongoDB GridFS
     """
     
     db = get_mongo_db()
+    projection = {'concepts': False, "codelists": False}
     
     query = {}
-    if provider:
+    if slug:
+        query["slug"] = slug
+    else:
         query['provider_name'] = provider
-    if dataset_code:
         query['dataset_code'] = dataset_code
 
-    datasets = db[constants.COL_DATASETS].find(query,
-                               {'revisions': 0})
+    datasets = db[constants.COL_DATASETS].find(query, projection)
 
-    ids = []
-    for doc in datasets:
-        id = export_file_csv_dataset_unit(doc=doc)
-        ids.append(str(id))
-        
-    return ids
-    
+    return [export_file_csv_dataset_unit(doc=doc) for doc in datasets]
+
