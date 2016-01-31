@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import logging
+from pprint import pprint
 import re
 import string
 
@@ -16,7 +18,12 @@ TAGS_REPLACE_CHARS.extend([s for s in string.punctuation if not s in ["-", "_"]]
 
 TAGS_MIN_CHAR = 2
 
+logger = logging.getLogger(__name__)
+
 def tags_filter(value):
+    
+    if not value:
+        return False
 
     if value in constants.TAGS_EXCLUDE_WORDS:
         return False
@@ -30,6 +37,9 @@ def tags_filter(value):
     return True            
 
 def tags_map(value):
+    
+    if not value:
+        return
 
     value = value.strip().lower()
 
@@ -58,99 +68,157 @@ def str_to_tags(value_str):
     ['bank']                
     """    
     tags = tags_map(value_str)
-    return [a for a in filter(tags_filter, tags)]
+    if tags:
+        return [a for a in filter(tags_filter, tags)]
+    return []
+
+def get_categories_tags_for_dataset(db, provider_name, dataset_code):
+    tags = []
+    query = {"provider_name": provider_name, "enable": True,
+              "datasets.dataset_code": dataset_code}
+    projection = {"datasets": False, "_id": False, 
+                  "doc_href": False, "metadata": False}        
+    categories = db[constants.COL_CATEGORIES].find(query, projection)
+    for doc in categories:
+        if doc.get("tags"):
+            tags.extend(doc["tags"])
+    return tags
     
-def generate_tags(db, doc, doc_type=None, 
-                  doc_provider=None, doc_dataset=None):
+def generate_tags_categories(db, doc, doc_provider):
+
+    select_for_tags = []
+    tags = []
+    
+    select_for_tags.append(doc_provider['name'])
+    select_for_tags.append(doc_provider['long_name'])
+    select_for_tags.append(doc_provider['region'])
+    select_for_tags.append(doc['category_code'])
+    select_for_tags.append(doc['name'])
+
+    if doc.get("all_parents"):
+        _query = {"provider_name": doc["provider_name"], "enable": True,
+                  "category_code": {"$in": doc["all_parents"]}}
+        _projection = {"datasets": False}
+        
+        all_parents = db[constants.COL_CATEGORIES].find(_query)
+        
+        for parent in all_parents:
+            _tags = generate_tags_categories(db, parent, doc_provider)
+            select_for_tags.extend(_tags)
+
+    for value in select_for_tags:
+        tags.extend(str_to_tags(value))
+        
+    return sorted(list(set(tags)))
+
+def generate_tags_dataset(db, doc, doc_provider):
     """Split and filter datas for return array of tags
     
     Used in update_tags()
 
     :param pymongo.database.Database db: MongoDB Database instance
     :param doc dict: Document MongoDB        
-    :param doc_type str: 
-    :param bool is_indexes: Bypass create_or_update_indexes() if False 
-
-    :raises ValueError: if provider_name is None
+    :param doc_provider dict: Document MongoDB        
     """
         
     select_for_tags = []
     tags = []
     
-    def search_dataset_dimension_list(key, value, dataset_doc):
-        if key in dataset_doc['dimension_list']: 
-            dimensions = dataset_doc['dimension_list'][key]
-            for d in dimensions:
-                if value == d[0]:
-                    return d[1] 
-
-    def search_dataset_attribute_list(key, value, dataset_doc):
-        if key in dataset_doc['attribute_list']:
-            attributes = dataset_doc['attribute_list'][key]
-            for a in attributes:
-                if value == a[0]:
-                    return a[1] 
+    select_for_tags.append(doc_provider['name'])
+    select_for_tags.append(doc_provider['long_name'])
+    select_for_tags.append(doc_provider['region'])    
+    select_for_tags.append(doc['dataset_code'])
+    select_for_tags.append(doc['name'])
     
-    if doc_type == constants.COL_DATASETS:
+    if 'notes' in doc and doc['notes'] and len(doc['notes']) > 0: 
+        select_for_tags.append(doc['notes'])
+    
+    if doc.get('concepts'):
+        for value in doc['concepts'].values():            
+            select_for_tags.append(value)
+    
+    if doc.get("codelists"):
+        if doc.get("dimension_keys"):
+            for key in doc["dimension_keys"]:
+                if not key in doc["codelists"]:
+                    continue
+                for value in doc['codelists'][key].values():
+                    select_for_tags.append(value)
+    
+        if doc.get("attribute_keys"):
+            for key in doc["attribute_keys"]:
+                if not key in doc["codelists"]:
+                    continue
+                for value in doc['codelists'][key].values():
+                    select_for_tags.append(value)
 
-        select_for_tags.append(doc['provider_name'])
-        select_for_tags.append(doc['dataset_code'])
-        select_for_tags.append(doc['name'])
+    categories_tags = get_categories_tags_for_dataset(db, 
+                                                      doc["provider_name"], 
+                                                      doc["dataset_code"])
+    if categories_tags:
+        tags.extend(categories_tags)
+    else:
+        logger.warning("Not categories tags for provider[%s] - dataset[%s]" % (doc_provider['name'], 
+                                                                               doc["dataset_code"]))
+    
+    for value in select_for_tags:
+        tags.extend(str_to_tags(value))
         
-        if 'notes' in doc and len(doc['notes'].strip()) > 0: 
-            select_for_tags.append(doc['notes'].strip())
+    return sorted(list(set(tags)))
+
+def generate_tags_series(db, doc, doc_provider, doc_dataset, categories_tags=[]):
+    """Split and filter datas for return array of tags
+    
+    Used in update_tags()
+
+    :param pymongo.database.Database db: MongoDB Database instance
+    :param doc dict: Document MongoDB        
+    :param doc_provider dict: Document MongoDB        
+    """
         
-        for key, values in doc['dimension_list'].items():            
-            for item in values:               
-                #TODO: dimension key ?
-                #select_for_tags.append(item[0])
-                select_for_tags.append(item[1])
+    select_for_tags = []
+    tags = []
+    
+    if categories_tags:
+        tags = categories_tags
+    
+    select_for_tags.append(doc_provider['name'])
+    select_for_tags.append(doc_provider['long_name'])
+    select_for_tags.append(doc_provider['region'])    
+    select_for_tags.append(doc['dataset_code'])
+    select_for_tags.append(doc['name'])
+    select_for_tags.append(doc['key'])
+    select_for_tags.append(doc['name'])
 
-        for key, values in doc['attribute_list'].items():            
-            #select_for_tags.append(key)        #attribute name:            
-            for item in values:            
-                #TODO: attribute key ?
-                #select_for_tags.append(item[0])
-                select_for_tags.append(item[1])
-        
-    elif doc_type == constants.COL_SERIES:
+    def search_dataset_concepts(key):
+        if doc_dataset.get('concepts'):
+            return doc_dataset.get('concepts').get(key)
 
-        query = {
-            'provider_name': doc['provider_name'], 
-            "dataset_code": doc['dataset_code']
-        }        
-        dataset = doc_dataset or db[constants.COL_DATASETS].find_one(query)
-        
-        if not dataset:
-            raise Exception("dataset not found for provider_name[%(provider_name)s] - dataset_code[%(dataset_code)s]" % query)
+    def search_dataset_codelists(key, value):
+        if key in doc_dataset.get('codelists'): 
+            codes = doc_dataset['codelists'].get(key)
+            if codes:
+                return codes.get(value)
+    
+    if 'notes' in doc and doc['notes'] and len(doc['notes']) > 0: 
+        select_for_tags.append(doc['notes'])
 
-        select_for_tags.append(doc['provider_name'])
-        select_for_tags.append(doc['dataset_code'])
-        select_for_tags.append(doc['key'])
-        select_for_tags.append(doc['name'])
-        
-        if 'notes' in doc and len(doc['notes'].strip()) > 0: 
-            select_for_tags.append(doc['notes'].strip())
+    for field in ["dimensions", "attributes"]:
+        if not doc.get(field):
+            continue
+            
+        for key, code in doc[field].items():
 
-        if doc['dimensions']:
-            for dimension_key, dimension_code in doc['dimensions'].items():
-                #select_for_tags.append(dimension_key)
-                if dimension_key and dimension_code:
-                    dimension_value = search_dataset_dimension_list(dimension_key, 
-                                                                   dimension_code, 
-                                                                   dataset)
-                    if dimension_value:            
-                        select_for_tags.append(dimension_value)
+            concept = search_dataset_concepts(key)
+            if concept:
+                select_for_tags.append(concept)
 
-        if doc['attributes']:
-            for attribute_key, attribute_code in doc['attributes'].items():            
-                #select_for_tags.append(attribute_key)
-                if attribute_key and attribute_code:
-                    attribute_value = search_dataset_attribute_list(attribute_key, 
-                                                                   attribute_code, 
-                                                                   dataset)
-                    if attribute_value:
-                        select_for_tags.append(attribute_value)
+            code_value = search_dataset_codelists(key, code)
+            if code_value:            
+                select_for_tags.append(code_value)
+
+    if doc['frequency'] in constants.FREQUENCIES_DICT:
+        select_for_tags.append(constants.FREQUENCIES_DICT[doc['frequency']])
 
     for value in select_for_tags:
         tags.extend(str_to_tags(value))
@@ -191,71 +259,172 @@ def bulk_result_aggregate(bulk_result):
         bulk_dict["writeConcernErrors"].extend(r["writeConcernErrors"])
     
     return bulk_dict
-    
 
 def run_bulk(bulk=None):
     try:
         result = bulk.execute()
         #TODO: bulk.execute({'w': 3, 'wtimeout': 1})
-        #pprint(result)
         return result
     except BulkWriteError as err:        
         #pprint(err.details)
         raise
+
+def update_tags_categories(db, provider_name=None, 
+                           max_bulk=100, dry_mode=False):
+
+    doc_provider = db[constants.COL_PROVIDERS].find_one({"enable": True,
+                                                         "name": provider_name})
+
+    if not doc_provider:
+        logger.error("Provider [%s] not found or disable." % provider_name)
+        return
     
-def update_tags(db, 
-                provider_name=None, dataset_code=None, serie_key=None, 
-                col_name=None, max_bulk=20):
-    
-    #TODO: cumul des results bulk
-    bulk = db[col_name].initialize_unordered_bulk_op()
+    query = {'provider_name': provider_name, "enable": True}
+    projection = {"datasets": False, "doc_href": False}
+
+    bulk = db[constants.COL_CATEGORIES].initialize_unordered_bulk_op()
     count = 0
-    query = {'provider_name': provider_name}
-    projection = None
-
-    if dataset_code:
-        query['dataset_code'] = dataset_code
-
-    if col_name == constants.COL_DATASETS:
-        projection = {"doc_href": False}
-    
-    if col_name == constants.COL_SERIES and serie_key:
-        query['key'] = serie_key
+    for doc in db[constants.COL_CATEGORIES].find(query, projection):
+        tags = generate_tags_categories(db, doc, doc_provider)
+        if not dry_mode and tags:
+            count += 1
+            bulk.find({'_id': doc["_id"]}).update_one({"$set": {'tags': tags}})
+            
+            if logger.isEnabledFor(logging.DEBUG):
+                msg = "update tags for category[%s] - provider[%s] - tags%s" 
+                logger.debug(msg % (doc["category_code"], 
+                                    provider_name,
+                                    tags))
         
-    if col_name == constants.COL_SERIES:
-        projection = {"release_dates": False, "values": False}
-
-    for doc in db[col_name].find(query, projection=projection):
-        #TODO: load dataset doc if search series ?
-        tags = generate_tags(db, doc, doc_type=col_name)
-        
-        #projection=projection
-        bulk.find({'_id': doc['_id']}).update_one({"$set": {'tags': tags}})
-        
-        count += 1
-        
-        if count >= max_bulk:
-            run_bulk(bulk)
-            bulk = db[col_name].initialize_unordered_bulk_op()
-            count = 0
-
-    #bulk delta
-    if count > 0:
+        elif dry_mode and tags:
+            print("--------------------------------")
+            print("category[%s] tags[%s]" % (doc["category_code"], ", ".join(tags)))
+            print("--------------------------------")
+   
+    if not dry_mode and count > 0:
         run_bulk(bulk)
 
-def search_tags(db, 
-               provider_name=None, 
-               dataset_code=None, 
-               frequency=None,
-               projection=None, 
-               search_tags=None,
-               search_type=constants.COL_DATASETS,
-               start_date=None,
-               end_date=None,
-               sort=None,
-               sort_desc=False,                        
-               skip=None, limit=None):
-    """Search in series by tags field
+def update_tags_datasets(db, provider_name=None, dataset_code=None, 
+                         max_bulk=100, dry_mode=False):
+
+    doc_provider = db[constants.COL_PROVIDERS].find_one({"enable": True,
+                                                         "name": provider_name})
+
+    if not doc_provider:
+        logger.error("Provider [%s] not found or disable." % provider_name)
+        return
+    
+    query = {'provider_name': provider_name, "enable": True}
+    projection = {"doc_href": False, "dimension_list": False, "attribute_list": False}
+    
+    if dataset_code:
+        query["dataset_code"] = dataset_code
+
+    bulk = db[constants.COL_DATASETS].initialize_unordered_bulk_op()
+    bulk_list = []
+    
+    for doc in db[constants.COL_DATASETS].find(query, projection):
+        tags = generate_tags_dataset(db, doc, doc_provider)
+
+        if not dry_mode and tags:
+            bulk_list.append((doc["_id"], tags))
+
+            if logger.isEnabledFor(logging.DEBUG):
+                msg = "update tags for dataset[%s] - provider[%s] - tags%s" 
+                logger.debug(msg % (doc["dataset_code"], 
+                                    provider_name,
+                                    tags))
+        
+        elif dry_mode and tags:
+            print("--------------------------------")
+            print("dataset[%s] tags[%s]" % (doc["dataset_code"], ", ".join(tags)))
+            print("--------------------------------")
+
+        if len(bulk_list) > max_bulk:
+            for b in bulk_list:
+                bulk.find({'_id': b[0]}).update_one({"$set": {'tags': b[1]}})
+            run_bulk(bulk)
+            bulk = db[constants.COL_DATASETS].initialize_unordered_bulk_op()
+            bulk_list = []
+            
+    if not dry_mode and len(bulk_list) > 0:
+        for b in bulk_list:
+            bulk.find({'_id': b[0]}).update_one({"$set": {'tags': b[1]}})
+        run_bulk(bulk)
+
+def update_tags_series(db, provider_name=None, dataset_code=None, 
+                       max_bulk=100, dry_mode=False):
+
+    doc_provider = db[constants.COL_PROVIDERS].find_one({"enable": True,
+                                                         "name": provider_name})
+
+    if not doc_provider:
+        logger.error("Provider [%s] not found or disable." % provider_name)
+        return
+    
+    dataset_query = {'provider_name': provider_name, "enable": True}
+    dataset_projection = {"doc_href": False, 
+                          "dimension_list": False, "attribute_list": False}
+
+    series_query = {'provider_name': doc_provider["name"]}
+    series_projection = {"values": False}
+    
+    if dataset_code:
+        dataset_query["dataset_code"] = dataset_code
+        series_query["dataset_code"] = dataset_code
+
+    bulk = db[constants.COL_SERIES].initialize_unordered_bulk_op()
+    bulk_list = []
+        
+    for doc_dataset in db[constants.COL_DATASETS].find(dataset_query, dataset_projection):
+
+        categories_tags = get_categories_tags_for_dataset(db, 
+                                                          provider_name, 
+                                                          doc_dataset["dataset_code"])
+        if not categories_tags:
+            logger.warning("Not categories tags for provider[%s] - dataset[%s]" % (provider_name, 
+                                                                                   doc_dataset["dataset_code"]))
+        
+        for doc in db[constants.COL_SERIES].find(series_query, series_projection):
+
+            tags = generate_tags_series(db, doc, doc_provider, doc_dataset, categories_tags)
+        
+            if not dry_mode and tags:
+                bulk_list.append((doc["_id"], tags))
+
+            if logger.isEnabledFor(logging.DEBUG):
+                msg = "update tags for series[%s] - dataset[%s] - provider[%s] - tags%s" 
+                logger.debug(msg % (doc["key"],
+                                    doc["dataset_code"], 
+                                    provider_name,
+                                    tags))
+
+            elif dry_mode and tags:
+                print("--------------------------------")
+                print("dataset[%s] - series[%s] - tags[%s]" % (doc_dataset["dataset_code"],
+                                                               doc["key"], ", ".join(tags)))
+                print("--------------------------------")
+    
+            if len(bulk_list) > max_bulk:
+                for b in bulk_list:
+                    bulk.find({'_id': b[0]}).update_one({"$set": {'tags': b[1]}})
+                run_bulk(bulk)
+                bulk = db[constants.COL_SERIES].initialize_unordered_bulk_op()
+                bulk_list = []
+            
+    if not dry_mode and len(bulk_list) > 0:
+        for b in bulk_list:
+            bulk.find({'_id': b[0]}).update_one({"$set": {'tags': b[1]}})
+        run_bulk(bulk)
+    
+def search_tags(db, provider_name=None, dataset_code=None, 
+                frequency=None,
+                projection=None, 
+                search_tags=None, search_type=None,
+                start_date=None, end_date=None,
+                sort=None, sort_desc=False,                        
+                skip=None, limit=None):
+    """Search in datasets or series by tags field
     
     >>> from dlstats import utils
     >>> db = utils.get_mongo_db()
@@ -273,8 +442,8 @@ def search_tags(db,
     """
     
     '''Convert search tag to lower case and strip tag'''
-    tags = str_to_tags(search_tags)        
-
+    tags = str_to_tags(search_tags)
+    
     # Add OR, NOT
     tags_regexp = [re.compile('.*%s.*' % e, re.IGNORECASE) for e in tags]
     #  AND implementation
@@ -309,8 +478,9 @@ def search_tags(db,
 
     else:
         COL_SEARCH = constants.COL_DATASETS
+        query["enable"] = True
         
-    cursor = db[COL_SEARCH].find(query, projection=projection)
+    cursor = db[COL_SEARCH].find(query, projection)
 
     if skip:
         cursor = cursor.skip(skip)
@@ -330,15 +500,22 @@ def search_series_tags(db, **kwargs):
     return search_tags(db, search_type=constants.COL_SERIES, **kwargs)
 
 def search_datasets_tags(db, **kwargs):
+    projection = {"dimension_list": False, "attribute_list": False,
+                  "concepts": False, "codelists": False}
+    kwargs.setdefault("projection", projection)
     return search_tags(db, search_type=constants.COL_DATASETS, **kwargs)
 
-def _aggregate_tags(db, source_col, target_col, max_bulk=20):
+def _aggregate_tags(db, source_col, target_col, add_match=None, max_bulk=20):
 
     bulk = db[target_col].initialize_unordered_bulk_op()
     count = 0
     
+    match = {"tags.0": {"$exists": True}}
+    if add_match:
+        match.update(add_match)
+    
     pipeline = [
-      {"$match": {"tags.0": {"$exists": True}}},
+      {"$match": match},
       {'$project': { '_id': 0, 'tags': 1, 'provider_name': 1}},
       {"$unwind": "$tags"},
       {"$group": {"_id": {"tag": "$tags", 'provider_name': "$provider"}, "count": {"$sum": 1}}},
@@ -400,10 +577,12 @@ def aggregate_tags_datasets(db, max_bulk=20):
     """
     return _aggregate_tags(db, 
                            constants.COL_DATASETS, 
-                           constants.COL_TAGS_DATASETS, 
+                           constants.COL_TAGS_DATASETS,
+                           add_match={"enable": True}, 
                            max_bulk=max_bulk)
 
 def aggregate_tags_series(db, max_bulk=20):
+    #FIXME: dataset enable !
     return _aggregate_tags(db, 
                            constants.COL_SERIES, 
                            constants.COL_TAGS_SERIES, 
