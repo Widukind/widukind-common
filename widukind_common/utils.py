@@ -198,7 +198,7 @@ def configure_logging(debug=False, stdout_enable=True, config_file=None,
         'loggers': {
             '': {
                 'handlers': [],
-                'level': 'INFO',
+                'level': level,
                 'propagate': False,
             },
         },
