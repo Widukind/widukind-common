@@ -48,22 +48,16 @@ def export_dataset(db, dataset):
     
     start = time.time()
     
-    ck = list(dataset['dimension_list'].keys())
-    
-    cl = sorted(ck, key=lambda t: t.lower())
-    #['freq', 'geo', 'na_item', 'nace_r2', 'unit']
-    
-    headers = ['key'] + cl    
+    headers = ['key'] + dataset['dimension_keys']
     #['key', 'freq', 'geo', 'na_item', 'nace_r2', 'unit']
     
     # revient à 0 et -1 ?
     dmin = float('inf')
     dmax = -float('inf')
 
-    series_list = db[constants.COL_SERIES].find({'provider_name': dataset['provider_name'],
-                                            "dataset_code": dataset['dataset_code']},
-                                           #{'revisions': 0, 'release_dates': 0},
-                                           )
+    query = {'provider_name': dataset['provider_name'], 
+             "dataset_code": dataset['dataset_code']}
+    series_list = db[constants.COL_SERIES].find(query)
     
     for s in series_list:
         #collect la première et dernière date trouvé
@@ -91,7 +85,7 @@ def export_dataset(db, dataset):
     def row_process(s):
         row = [s['key']]
         
-        for c in cl:
+        for c in dataset['dimension_keys']:
             if c in s['dimensions']:
                 row.append(s['dimensions'][c])
             else:
@@ -158,12 +152,11 @@ def record_csv_file(db, values,
     metadata = {
         "doc_type": prefix,
         'provider_name': provider_name,
-        "dataset_code": dataset_code
+        "dataset_code": dataset_code,
+        "slug": slug,
     }
     if key: 
         metadata['key'] = key
-    if slug: 
-        metadata['slug'] = slug
 
     grid_in = fs.new_file(filename=filename, 
                           contentType="text/csv", 
@@ -178,7 +171,9 @@ def record_csv_file(db, values,
     grid_in.close()
     return grid_in._id
 
-def export_file_csv_series_unit(doc=None, provider=None, dataset_code=None, key=None, slug=None):
+def export_file_csv_series_unit(doc=None, 
+                                provider=None, dataset_code=None, key=None, 
+                                slug=None):
     """Create CSV File from one series and record in MongoDB GridFS
     """
 
@@ -203,46 +198,51 @@ def export_file_csv_series_unit(doc=None, provider=None, dataset_code=None, key=
             doc = db[constants.COL_SERIES].find_one(query)
             
     if not doc:
-        raise Exception("Series not found : %s" % key)
+        msg = "Series not found for provider[%s] - dataset[%s] - key[%s] - slug[%s]"
+        raise Exception(msg % (provider, dataset_code, key, slug))
     
-    values = export_series(doc)
-
-    return record_csv_file(db, values, 
+    return record_csv_file(db, export_series(doc), 
                            provider_name=doc['provider_name'],
                            dataset_code=doc["dataset_code"],
                            key=doc["key"],
                            slug=doc["slug"], 
                            prefix="series")
 
-def export_file_csv_dataset_unit(doc=None, provider=None, dataset_code=None):
+def export_file_csv_dataset_unit(doc=None, 
+                                 provider=None, dataset_code=None,
+                                 slug=None):
     """Create CSV File from one Dataset and record in MongoDB GridFS
     """
 
     db = get_mongo_db()
     
     if not doc:
-        if not provider:
-            raise ValueError("provider is required")
-        if not dataset_code:
-            raise ValueError("dataset_code is required")
+        if slug:
+            doc = db[constants.COL_DATASETS].find_one({"slug": slug})
+        else:
+            if not provider:
+                raise ValueError("provider is required")
+            if not dataset_code:
+                raise ValueError("dataset_code is required")
     
-        query = {}
-        query['provider_name'] = provider
-        query['dataset_code'] = dataset_code
-    
-        doc = db[constants.COL_DATASETS].find_one(query, {'revisions': 0})
+            query = {}
+            query['provider_name'] = provider
+            query['dataset_code'] = dataset_code
+        
+            doc = db[constants.COL_DATASETS].find_one(query, {'revisions': 0})
     
     if not doc:
-        raise Exception("Document not found for provider[%s] - dataset[%s]" % (provider, dataset_code))
+        raise Exception("Dataset not found for provider[%s] - dataset[%s] - slug[%s]" % (provider, 
+                                                                                         dataset_code,
+                                                                                         slug))
     
     values = export_dataset(db, doc)
     
-    return record_csv_file(db,
-                         values, 
-                         provider_name=doc['provider_name'],
-                         dataset_code=doc["dataset_code"],
-                         slug=doc["slug"], 
-                         prefix="dataset")
+    return record_csv_file(db, values, 
+                           provider_name=doc['provider_name'],
+                           dataset_code=doc["dataset_code"],
+                           slug=doc["slug"], 
+                           prefix="dataset")
 
 def export_file_csv_dataset(provider=None, dataset_code=None, slug=None):
     """Create CSV File from one or more Dataset and record in MongoDB GridFS
