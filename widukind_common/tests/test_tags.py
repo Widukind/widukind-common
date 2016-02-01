@@ -200,7 +200,7 @@ class GenerateTagsTestCase(BaseDBTestCase):
             pprint(err.details)
             self.fail(str(err))
 
-        tags = tags_utils.generate_tags_dataset(self.db, dataset, self.doc_provider)
+        tags = tags_utils.generate_tags_dataset(self.db, dataset, self.doc_provider, categories_tags=category["tags"])
         self.assertEqual(tags, ['c1', 'category', 'd1', 'daily', 'dataset', 'estimate', 'frequency', 'mars', 'observation', 'p1', 'provider', 'status', 'test'])
 
     def test_generate_tags_series(self):
@@ -278,14 +278,10 @@ class GenerateTagsTestCase(BaseDBTestCase):
             pprint(err.details)
             self.fail(str(err))
 
-        categories_tags = tags_utils.get_categories_tags_for_dataset(self.db, 
-                                                                     self.doc_provider["name"], 
-                                                                     dataset["dataset_code"])
-
         tags = tags_utils.generate_tags_series(self.db, series, 
                                                self.doc_provider, 
                                                dataset,
-                                               categories_tags)
+                                               categories_tags=category["tags"])
         self.assertEqual(tags, ['c1', 'category', 'country', 'd1', 'estimate', 'france', 'mars', 'monthly', 'observation', 'p1', 'provider', 'series', 'status', 'test', 'x1'])
 
 
@@ -324,7 +320,16 @@ class UpdateTagsTestCase(BaseDBTestCase):
         self.db[constants.COL_CATEGORIES].insert(category)
         self.assertEqual(self.db[constants.COL_CATEGORIES].count(), 1)
         
-        tags_utils.update_tags_categories(self.db, self.doc_provider["name"])
+        result = tags_utils.update_tags_categories(self.db, self.doc_provider["name"])
+        
+        self.assertEqual(len(result["writeErrors"]), 0)
+        self.assertEqual(result["nMatched"], 1)
+        self.assertEqual(result["nModified"], 1)
+
+        result = tags_utils.update_tags_categories(self.db, self.doc_provider["name"],
+                                                   update_only=True)
+        self.assertEqual(result["nMatched"], 0)
+        self.assertEqual(result["nModified"], 0)
 
         query = {"provider_name": category["provider_name"]}
         category_doc = self.db[constants.COL_CATEGORIES].find_one(query)
@@ -365,7 +370,19 @@ class UpdateTagsTestCase(BaseDBTestCase):
         self.db[constants.COL_DATASETS].insert(dataset)
         self.assertEqual(self.db[constants.COL_DATASETS].count(), 1)
 
-        tags_utils.update_tags_datasets(self.db, self.doc_provider["name"], dataset["dataset_code"])
+        result = tags_utils.update_tags_datasets(self.db, 
+                                                 self.doc_provider["name"], 
+                                                 dataset["dataset_code"])
+        self.assertEqual(len(result["writeErrors"]), 0)
+        self.assertEqual(result["nMatched"], 1)
+        self.assertEqual(result["nModified"], 1)
+        
+        result = tags_utils.update_tags_datasets(self.db, 
+                                                 self.doc_provider["name"], 
+                                                 dataset["dataset_code"],
+                                                 update_only=True)
+        self.assertEqual(result["nMatched"], 0)
+        self.assertEqual(result["nModified"], 0)
 
         query = {"provider_name": dataset["provider_name"],
                  "dataset_code": dataset["dataset_code"]}
@@ -430,7 +447,20 @@ class UpdateTagsTestCase(BaseDBTestCase):
         self.db[constants.COL_SERIES].insert(series)
         self.assertEqual(self.db[constants.COL_SERIES].count(), 1)
 
-        tags_utils.update_tags_series(self.db, self.doc_provider["name"], dataset["dataset_code"])
+        result = tags_utils.update_tags_series(self.db, 
+                                               self.doc_provider["name"], 
+                                               dataset["dataset_code"])
+
+        self.assertEqual(len(result["writeErrors"]), 0)
+        self.assertEqual(result["nMatched"], 1)
+        self.assertEqual(result["nModified"], 1)
+
+        result = tags_utils.update_tags_series(self.db, 
+                                               self.doc_provider["name"], 
+                                               dataset["dataset_code"],
+                                               update_only=True)
+        self.assertEqual(result["nMatched"], 0)
+        self.assertEqual(result["nModified"], 0)
 
         query = {"provider_name": series["provider_name"],
                  "dataset_code": series["dataset_code"],
@@ -438,6 +468,22 @@ class UpdateTagsTestCase(BaseDBTestCase):
         series_doc = self.db[constants.COL_SERIES].find_one(query)
         self.assertIsNotNone(series_doc)
         self.assertEqual(series_doc["tags"], ['country', 'd1', 'estimate', 'france', 'mars', 'monthly', 'observation', 'p1', 'provider', 'series', 'status', 'test', 'x1'])
+    
+
+        """    
+        result = self.db[constants.COL_SERIES].update_one({"provider_name": self.doc_provider["name"], 
+                                                  "dataset_code": dataset["dataset_code"]}, 
+                                                 {"$set": {"tags": []}})
+        
+        pprint(result)
+        result = tags_utils.update_tags_series(self.db, 
+                                               self.doc_provider["name"], 
+                                               dataset["dataset_code"])
+
+        self.assertEqual(len(result["writeErrors"]), 0)
+        self.assertEqual(result["nMatched"], 1)
+        self.assertEqual(result["nModified"], 1)
+        """
     
 @unittest.skipIf(True, "TODO")    
 class SearchTagsTestCase(BaseDBTestCase):
