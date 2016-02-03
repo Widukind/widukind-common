@@ -179,7 +179,7 @@ def configure_logging(debug=False, stdout_enable=True, config_file=None,
                 'datefmt': '%Y-%m-%d %H:%M:%S',
             },
             'simple': {
-                'format': '%(asctime)s %(name)s: [%(levelname)s] - %(message)s',
+                'format': '[%(process)d] - %(asctime)s %(name)s: [%(levelname)s] - %(message)s',
                 'datefmt': '%Y-%m-%d %H:%M:%S',
             },
         },    
