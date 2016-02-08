@@ -37,6 +37,21 @@ COL_ALL = [
     COL_LOGS
 ]
 
+CACHE_FREQUENCY = [
+    "A", 
+    "M", 
+    "Q", 
+    "W",
+    "W-SUN",
+    "W-MON",
+    "W-TUE",
+    "W-WED",
+    "W-THU",
+    "W-FRI",
+    "W-SAT",
+    #"D", 
+]
+
 FREQ_ANNUALY = "A"
 FREQ_QUATERLY = "Q"
 FREQ_MONTHLY = "M"

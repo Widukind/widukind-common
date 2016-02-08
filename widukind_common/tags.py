@@ -426,12 +426,6 @@ def _update_tags_series(db, provider_name=None, dataset_code=None,
     if dataset_code:
         dataset_query["dataset_code"] = dataset_code
 
-    """    
-    tags_by_categories = {}
-    for doc in db[constants.COL_CATEGORIES].find({"provider_name": provider_name}, {"provider_name": True, "category_code": True, "tags": True}):
-        tags_by_categories[doc["category_code"]] = doc["tags"]
-    """
-
     categories_tags_by_datasets = {}
     for doc in db[constants.COL_CATEGORIES].find({"provider_name": provider_name,"datasets.0": {"$exists": True}}):
         for ds in doc["datasets"]:
