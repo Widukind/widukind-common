@@ -25,6 +25,8 @@ class BaseDBTestCase(BaseTestCase):
         self.assertEqual(self.db.name, "widukind_test")
 
         utils.clean_mongodb(self.db)
+
+        self._collections_is_empty()
                 
         create_or_update_indexes(self.db, force_mode=True)
 
