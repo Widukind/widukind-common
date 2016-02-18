@@ -156,14 +156,10 @@ def generate_tags_series(db, doc, doc_provider, doc_dataset, categories_tags=[])
     select_for_tags.append(doc['key'])
     select_for_tags.append(doc['name'])
 
-    def search_dataset_concepts(key):
-        if doc_dataset.get('concepts'):
-            return doc_dataset.get('concepts').get(key)
-
     def search_dataset_codelists(key, value):
         if key in doc_dataset.get('codelists'): 
             codes = doc_dataset['codelists'].get(key)
-            if codes:
+            if codes and value in codes:
                 return codes.get(value)
     
     if 'notes' in doc and doc['notes'] and len(doc['notes']) > 0: 
@@ -175,7 +171,7 @@ def generate_tags_series(db, doc, doc_provider, doc_dataset, categories_tags=[])
             
         for key, code in doc[field].items():
 
-            concept = search_dataset_concepts(key)
+            concept = doc_dataset.get('concepts').get(key)
             if concept:
                 select_for_tags.append(concept)
 
@@ -438,9 +434,10 @@ def _update_tags_series(db, provider_name=None, dataset_code=None,
     if dataset_code:
         dataset_query["dataset_code"] = dataset_code
 
-    for doc_dataset in db[constants.COL_DATASETS].find(dataset_query, 
-                                                       dataset_projection,
-                                                       no_cursor_timeout=True):
+    dataset_ids = db[constants.COL_DATASETS].distinct("_id", dataset_query)
+    
+    for _id in dataset_ids:
+        doc_dataset = db[constants.COL_DATASETS].find_one({"_id": _id}, dataset_projection)
 
         for doc, tags in _update_tags_series_unit(db, doc_provider, doc_dataset, update_only=update_only, dry_mode=dry_mode):
             yield doc, tags
@@ -456,7 +453,6 @@ def _update_tags_series_sync(db, provider_name=None, dataset_code=None,
                                          update_only=update_only, dry_mode=dry_mode):
 
         if not dry_mode and tags:
-            #bulk_list.append((doc["_id"], tags))
             bulk_list.append(UpdateOne({'_id': doc["_id"]}, {"$set": {'tags': tags}}))
         
         elif dry_mode and tags:
