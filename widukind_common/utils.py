@@ -12,16 +12,16 @@ from widukind_common import constants
 def get_mongo_url():
     return constants.MONGODB_URL
 
-def get_mongo_client(url=None):
+def get_mongo_client(url=None, connect=False):
     # TODO: tz_aware
     url = url or get_mongo_url()
-    client = MongoClient(url)
+    client = MongoClient(url, connect=connect)
     return client
 
-def get_mongo_db(url=None):
+def get_mongo_db(url=None, **kwargs):
     # TODO: tz_aware
     url = url or get_mongo_url()
-    client = get_mongo_client(url)
+    client = get_mongo_client(url, **kwargs)
     return client.get_default_database()
 
 UPDATE_INDEXES = False
@@ -244,11 +244,16 @@ def configure_logging(debug=False, stdout_enable=True, config_file=None,
             },      
         },
         'loggers': {
+            'requests.packages.urllib3': {
+                'handlers': ['null'],
+                'level': 'NOTSET',
+            },
             '': {
                 'handlers': [],
                 'level': level,
                 'propagate': False,
             },
+    
         },
     }
     
@@ -263,8 +268,9 @@ def configure_logging(debug=False, stdout_enable=True, config_file=None,
     if debug:
         LOGGING['loggers']['']['level'] = 'DEBUG'
         for handler in LOGGING['handlers'].keys():
-            LOGGING['handlers'][handler]['formatter'] = 'debug'
-            LOGGING['handlers'][handler]['level'] = 'DEBUG' 
+            if handler != 'null':
+                LOGGING['handlers'][handler]['formatter'] = 'debug'
+                LOGGING['handlers'][handler]['level'] = 'DEBUG' 
 
     logging.config.dictConfig(LOGGING)
     return logging.getLogger()
