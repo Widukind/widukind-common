@@ -667,21 +667,27 @@ def search_tags(db, provider_name=None, dataset_code=None,
 
         COL_SEARCH = constants.COL_SERIES
 
-        date_freq = constants.FREQ_ANNUALY
+        #date_freq = constants.FREQ_ANNUALY
 
         if frequency:
             query['frequency'] = frequency
-            date_freq = frequency
+            #date_freq = frequency
                         
         if dataset_code:
-            query['dataset_code'] = dataset_code
+            if isinstance(dataset_code, str):
+                datasets = [dataset_code]
+            else:
+                datasets = dataset_code
+            query['dataset_code'] = {"$in": datasets}
 
+        """
         if start_date:
             ordinal_start_date = pandas.Period(start_date, freq=date_freq).ordinal
             query["start_date"] = {"$gte": ordinal_start_date}
         
         if end_date:
             query["end_date"] = {"$lte": pandas.Period(end_date, freq=date_freq).ordinal}
+        """
 
     else:
         COL_SEARCH = constants.COL_DATASETS
@@ -705,7 +711,7 @@ def search_tags(db, provider_name=None, dataset_code=None,
            
 def search_series_tags(db, **kwargs):
     return search_tags(db, search_type=constants.COL_SERIES, **kwargs)
-
+    
 def search_datasets_tags(db, **kwargs):
     projection = {"dimension_list": False, "attribute_list": False,
                   "concepts": False, "codelists": False}

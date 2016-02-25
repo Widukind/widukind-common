@@ -60,9 +60,9 @@ FREQ_DAILY = "D"
 FREQ_HOURLY = "H"
 
 FREQUENCIES = (
-    (FREQ_ANNUALY, "Annualy"),
+    (FREQ_ANNUALY, "Annually"),
     (FREQ_MONTHLY, "Monthly"),
-    (FREQ_QUATERLY, "Quaterly"),
+    (FREQ_QUATERLY, "Quarterly"),
     (FREQ_WEEKLY, "Weekly"),
     (FREQ_DAILY, "Daily"),
     (FREQ_HOURLY, "Hourly"),
@@ -72,12 +72,12 @@ FREQUENCIES_DICT = dict(FREQUENCIES)
 
 """
 FREQUENCIES_CONVERT = {
-    'Annualy': 'A',
-    'annualy': 'A',
+    'Annually': 'A',
+    'annually': 'A',
     'Monthly': 'M',
     'monthly': 'M',
-    'Quaterly': 'Q',
-    'quaterly': 'Q',
+    'Quarterly': 'Q',
+    'quarterly': 'Q',
     'Weekly': 'W',
     'weekly': 'W',
     'Daily': 'D',
