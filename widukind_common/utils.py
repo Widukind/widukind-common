@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import logging
 import logging.config
     
 from pymongo import MongoClient
-from pymongo import ASCENDING, DESCENDING
+from pymongo import ASCENDING
 
 from widukind_common import constants
 
@@ -26,7 +25,7 @@ def get_mongo_db(url=None, **kwargs):
 
 UPDATE_INDEXES = False
 
-def create_or_update_indexes(db, force_mode=False):
+def create_or_update_indexes(db, force_mode=False, background=True):
     """Create or update MongoDB indexes"""
     
     global UPDATE_INDEXES
@@ -37,177 +36,102 @@ def create_or_update_indexes(db, force_mode=False):
     '''********* PROVIDERS ********'''
 
     db[constants.COL_PROVIDERS].create_index([
-        ("name", ASCENDING)], 
-        name="name_idx", unique=True)
+        ("slug", ASCENDING)], 
+        name="slug_idx", unique=True, background=background)
 
     db[constants.COL_PROVIDERS].create_index([
-        ('enable', ASCENDING)], 
-        name="enable_idx")
+        ("name", ASCENDING)], 
+        name="name_idx", 
+        background=background)
 
     '''********* CATEGORIES *******'''
-    
+
+    db[constants.COL_CATEGORIES].create_index([
+        ("slug", ASCENDING)], 
+        name="slug_idx", unique=True, background=background)
+
     db[constants.COL_CATEGORIES].create_index([
         ('provider_name', ASCENDING), 
         ("category_code", ASCENDING)], 
-        name="provider_category_idx", unique=True)
-
-    db[constants.COL_CATEGORIES].create_index([
-        ("parent", ASCENDING)], 
-        name="parent_idx")
-
-    db[constants.COL_CATEGORIES].create_index([
-        ("all_parents", ASCENDING)], 
-        name="all_parents_idx")
-
-    db[constants.COL_CATEGORIES].create_index([
-        ("provider_name", ASCENDING)], 
-        name="provider_idx")
-        
-    db[constants.COL_CATEGORIES].create_index([
-        ("datasets.dataset_code", ASCENDING)], 
-        name="datasets_idx")
+        name="provider_category_idx", 
+        #unique=True, 
+        background=background)
     
+    db[constants.COL_CATEGORIES].create_index([
+        ("tags", ASCENDING)], 
+        name="tags_idx", background=background)
+
     '''********* DATASETS *********'''
+    
+    db[constants.COL_DATASETS].create_index([
+        ("slug", ASCENDING)], 
+        name="slug_idx", unique=True, background=background)
+
+    db[constants.COL_DATASETS].create_index([
+        ("tags", ASCENDING)], 
+        name="tags_idx", background=background)
     
     db[constants.COL_DATASETS].create_index([
         ('provider_name', ASCENDING), 
         ("dataset_code", ASCENDING)], 
-        name="provider_dataset_idx", unique=True)
+        name="datasets1", 
+        background=background)
 
     db[constants.COL_DATASETS].create_index([
-        ('enable', ASCENDING)], 
-        name="enable_idx")
+        ('provider_name', ASCENDING), 
+        ("dataset_code", ASCENDING),
+        ("tags", ASCENDING)], 
+        name="datasets2", background=background)
 
     db[constants.COL_DATASETS].create_index([
-        ("provider_name", ASCENDING)], 
-        name="provider_idx")
-        
-    db[constants.COL_DATASETS].create_index([
-        ("name", ASCENDING)], 
-        name="name_idx")
-
-    db[constants.COL_DATASETS].create_index([
-        ('enable', ASCENDING), 
-        ("last_update", DESCENDING)], 
-        name="last_update_idx")
+        ("last_update", ASCENDING)], 
+        name="datasets3")
 
     '''********* SERIES *********'''
 
     db[constants.COL_SERIES].create_index([
+        ("slug", ASCENDING)], 
+        name="slug_idx", unique=True, background=background)
+
+    db[constants.COL_SERIES].create_index([
         ('provider_name', ASCENDING), 
         ("dataset_code", ASCENDING), 
         ("key", ASCENDING)], 
-        name="provider_dataset_key_idx", unique=True)
+        name="series1", 
+        background=background)
 
     db[constants.COL_SERIES].create_index([
-        ('provider_name', ASCENDING), 
-        ("dataset_code", ASCENDING)], 
-        name="provider_dataset_idx")
-
-    db[constants.COL_SERIES].create_index([
-        ("provider_name", ASCENDING)], 
-        name="provider_idx")
-
-    db[constants.COL_SERIES].create_index([
-        ("dataset_code", ASCENDING)], 
-        name="dataset_code_idx")
-
-    db[constants.COL_SERIES].create_index([
-        ("key", ASCENDING)], 
-        name="key_idx")
-
-    db[constants.COL_SERIES].create_index([
-        ("name", ASCENDING)], 
-        name="name_idx")
-    
-    db[constants.COL_SERIES].create_index([
-        ("frequency", DESCENDING)], 
-        name="frequency_idx")
-
-    db[constants.COL_SERIES].create_index([
-        ("values.revisions", ASCENDING)], 
-        name="valuesrevisions_idx")
-
-    '''Search form'''
-    db[constants.COL_SERIES].create_index([
-        ('provider_name', ASCENDING), 
-        ("tags", ASCENDING)], 
-        name="provider_tags_idx")
-
-    db[constants.COL_SERIES].create_index([
-        ('provider_name', ASCENDING), 
-        ("dataset_code", ASCENDING), 
-        ("tags", ASCENDING)], 
-        name="provider_dataset_code_tags_idx")
-    
-    db[constants.COL_SERIES].create_index([
-        ('provider_name', ASCENDING), 
-        ("tags", ASCENDING), 
-        ("frequency", DESCENDING)], 
-        name="provider_tags_frequency_idx")
-    
-    db[constants.COL_SERIES].create_index([
-        ('provider_name', ASCENDING), 
-        ("dataset_code", ASCENDING), 
         ("dimensions", ASCENDING)], 
-        name="provider_dataset_code_dimensions_idx")
+        name="series2", background=background)
 
     db[constants.COL_SERIES].create_index([
-        ('provider_name', ASCENDING), 
-        ("dataset_code", ASCENDING), 
         ("attributes", ASCENDING)], 
-        name="provider_dataset_code_attributes_idx")
-
-    '''********* TAGS ***********'''
-
-    db[constants.COL_CATEGORIES].create_index([
-        ("tags", ASCENDING)], 
-        name="tags_idx")
-
-    db[constants.COL_DATASETS].create_index([
-        ("tags", ASCENDING)], 
-        name="tags_idx")
-    
-    db[constants.COL_SERIES].create_index([
-        ("tags", ASCENDING)], 
-        name="tags_idx")
-    
-    db[constants.COL_TAGS_DATASETS].create_index([
-        ("name", ASCENDING)], 
-        name="name_idx", unique=True)
-
-    db[constants.COL_TAGS_DATASETS].create_index([
-        ("providers.name", ASCENDING)], 
-        name="providers_name_idx")
-
-    db[constants.COL_TAGS_SERIES].create_index([
-        ("name", ASCENDING)], 
-        name="name_idx", unique=True)
-
-    db[constants.COL_TAGS_SERIES].create_index([
-        ("providers.name", ASCENDING)], 
-        name="providers_name_idx")
-    
-    '''********* SLUG ***********'''
-
-    db[constants.COL_PROVIDERS].create_index([
-        ("slug", ASCENDING)], 
-        name="slug_idx", unique=True)
-
-    db[constants.COL_CATEGORIES].create_index([
-        ("slug", ASCENDING)], 
-        name="slug_idx", unique=True)
-
-    db[constants.COL_DATASETS].create_index([
-        ("slug", ASCENDING)], 
-        name="slug_idx", unique=True)
+        name="series3", background=background)
 
     db[constants.COL_SERIES].create_index([
-        ("slug", ASCENDING)], 
-        name="slug_idx", unique=True)
+        ("tags", ASCENDING)], 
+        name="series4", background=background)
 
-    
-    
+    db[constants.COL_SERIES].create_index([
+        ("tags", ASCENDING),
+        ('provider_name', ASCENDING)], 
+        name="series5", background=background)
+
+    db[constants.COL_SERIES].create_index([
+        ("tags", ASCENDING),
+        ('provider_name', ASCENDING), 
+        ("dataset_code", ASCENDING)], 
+        name="series6", background=background)
+
+    db[constants.COL_SERIES].create_index([
+        ("frequency", ASCENDING)], 
+        name="series7")
+
+    db[constants.COL_SERIES].create_index([
+        ("start_ts", ASCENDING),        
+        ("end_ts", ASCENDING)], 
+        name="series8", background=background)
+
     UPDATE_INDEXES = True
 
 def configure_logging(debug=False, stdout_enable=True, config_file=None,
