@@ -2,6 +2,8 @@
 
 import sys
 import logging.config
+
+import arrow
     
 from pymongo import MongoClient
 from pymongo import ASCENDING
@@ -108,14 +110,14 @@ def create_or_update_indexes(db, force_mode=False, background=True):
         ("attributes", ASCENDING)], 
         name="series3", background=background)
 
-    db[constants.COL_SERIES].create_index([
-        ("tags", ASCENDING)], 
-        name="series4", background=background)
+    #db[constants.COL_SERIES].create_index([
+    #    ("tags", ASCENDING)], 
+    #    name="series4", background=background)
 
-    db[constants.COL_SERIES].create_index([
-        ("tags", ASCENDING),
-        ('provider_name', ASCENDING)], 
-        name="series5", background=background)
+    #db[constants.COL_SERIES].create_index([
+    #    ("tags", ASCENDING),
+    #    ('provider_name', ASCENDING)], 
+    #    name="series5", background=background)
 
     db[constants.COL_SERIES].create_index([
         ("tags", ASCENDING),
@@ -199,3 +201,5 @@ def configure_logging(debug=False, stdout_enable=True, config_file=None,
     logging.config.dictConfig(LOGGING)
     return logging.getLogger()
 
+def utcnow():
+    return arrow.utcnow().datetime

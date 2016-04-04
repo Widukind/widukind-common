@@ -647,39 +647,39 @@ def search_tags(db, provider_name=None, dataset_code=None,
     #print(docs.count())    
     #for doc in docs: print(doc['provider_name'], doc['dataset_code'], doc['key'], doc['name'])
     """
-    
+
     '''Convert search tag to lower case and strip tag'''
     tags = str_to_tags(search_tags)
     
-    # Add OR, NOT
-    tags_regexp = [re.compile('.*%s.*' % e, re.IGNORECASE) for e in tags]
-    #  AND implementation
+    tags_regexp = [re.compile(r'.*%s.*' % e) for e in tags] #, re.IGNORECASE
     query = {"tags": {"$all": tags_regexp}}
 
     if provider_name:
+        
         if isinstance(provider_name, str):
             providers = [provider_name]
         else:
             providers = provider_name
         query['provider_name'] = {"$in": providers}
-        
+    
     if search_type == "series":
 
         COL_SEARCH = constants.COL_SERIES
 
         #date_freq = constants.FREQ_ANNUALY
 
-        if frequency:
-            query['frequency'] = frequency
-            #date_freq = frequency
-                        
         if dataset_code:
+            
             if isinstance(dataset_code, str):
                 datasets = [dataset_code]
             else:
                 datasets = dataset_code
             query['dataset_code'] = {"$in": datasets}
 
+        if frequency:
+            query['frequency'] = frequency
+            #date_freq = frequency
+                        
         """
         if start_date:
             ordinal_start_date = pandas.Period(start_date, freq=date_freq).ordinal
@@ -692,9 +692,9 @@ def search_tags(db, provider_name=None, dataset_code=None,
     else:
         COL_SEARCH = constants.COL_DATASETS
         query["enable"] = True
-        
-    cursor = db[COL_SEARCH].find(query, projection)
 
+    cursor = db[COL_SEARCH].find(query, projection)
+    
     if skip:
         cursor = cursor.skip(skip)
     
