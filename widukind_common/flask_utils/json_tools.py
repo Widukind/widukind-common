@@ -39,7 +39,7 @@ def json_response_async(docs, meta={}):
         yield '{"meta": {}, "data": ['
         for i, row in enumerate(docs):
             yield json.dumps(row, default=json_convert, indent=indent)
-            if i < count:
+            if i < count -1:
                 yield ","
         yield "]}"
 
