@@ -111,20 +111,20 @@ def complex_queries_series(query={}):
         
     return query
     
-def get_provider(slug):
+def get_provider(slug, projection=None):
+    projection = projection or {"_id": False}
     provider_doc = col_providers().find_one({'slug': slug, "enable": True}, 
-                                                    {"_id": False})
+                                            projection=projection)
     if not provider_doc:
         abort(404)
         
     return provider_doc
 
-def get_dataset(slug, ds_projection=None):
-    ds_projection = ds_projection or {"_id": False, "slug": True, "name": True,
+def get_dataset(slug, projection=None):
+    ds_projection = projection or {"_id": False, "slug": True, "name": True,
                      "provider_name": True, "dataset_code": True}    
-    dataset_doc = col_datasets().find_one({"enable": True,
-                                                   "slug": slug},
-                                                  ds_projection)
+    dataset_doc = col_datasets().find_one({"enable": True, "slug": slug},
+                                          ds_projection)
     
     if not dataset_doc:
         abort(404)
