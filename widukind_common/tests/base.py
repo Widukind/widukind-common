@@ -35,6 +35,5 @@ class BaseDBTestCase(BaseTestCase):
         self.assertEqual(self.db[constants.COL_CATEGORIES].count(), 0)
         self.assertEqual(self.db[constants.COL_DATASETS].count(), 0)
         self.assertEqual(self.db[constants.COL_SERIES].count(), 0)
-        self.assertEqual(self.db[constants.COL_TAGS_DATASETS].count(), 0)
-        self.assertEqual(self.db[constants.COL_TAGS_SERIES].count(), 0)
+        #self.assertEqual(self.db[constants.COL_TAGS].count(), 0)
         

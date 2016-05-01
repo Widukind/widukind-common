@@ -6,7 +6,7 @@ import logging.config
 import arrow
     
 from pymongo import MongoClient
-from pymongo import ASCENDING
+from pymongo import ASCENDING, DESCENDING
 
 from widukind_common import constants
 
@@ -34,6 +34,12 @@ def create_or_update_indexes(db, force_mode=False, background=True):
     
     if not force_mode and UPDATE_INDEXES:
         return
+
+    '''********* CALENDARS ********'''
+
+    db[constants.COL_CALENDARS].create_index([
+        ("key", ASCENDING)], 
+        name="key_idx", unique=True, background=background)
 
     '''********* PROVIDERS ********'''
 
@@ -98,7 +104,8 @@ def create_or_update_indexes(db, force_mode=False, background=True):
     db[constants.COL_SERIES].create_index([
         ('provider_name', ASCENDING), 
         ("dataset_code", ASCENDING), 
-        ("key", ASCENDING)], 
+        #("key", ASCENDING)
+        ], 
         name="series1", 
         background=background)
 
@@ -110,29 +117,51 @@ def create_or_update_indexes(db, force_mode=False, background=True):
         ("attributes", ASCENDING)], 
         name="series3", background=background)
 
-    #db[constants.COL_SERIES].create_index([
-    #    ("tags", ASCENDING)], 
-    #    name="series4", background=background)
+    db[constants.COL_SERIES].create_index([
+        ("tags", ASCENDING)], 
+        name="series4", background=background)
 
     #db[constants.COL_SERIES].create_index([
     #    ("tags", ASCENDING),
     #    ('provider_name', ASCENDING)], 
     #    name="series5", background=background)
 
-    db[constants.COL_SERIES].create_index([
-        ("tags", ASCENDING),
-        ('provider_name', ASCENDING), 
-        ("dataset_code", ASCENDING)], 
-        name="series6", background=background)
+    #db[constants.COL_SERIES].create_index([
+    #    ("tags", ASCENDING),
+    #    ('provider_name', ASCENDING), 
+    #    ("dataset_code", ASCENDING)], 
+    #    name="series6", background=background)
 
     db[constants.COL_SERIES].create_index([
         ("frequency", ASCENDING)], 
-        name="series7")
+        name="series7", background=background)
 
     db[constants.COL_SERIES].create_index([
         ("start_ts", ASCENDING),        
         ("end_ts", ASCENDING)], 
         name="series8", background=background)
+
+    '''********* TAGS ***********'''
+
+    db[constants.COL_TAGS].create_index([
+        ("name", ASCENDING)], 
+        name="name_idx", unique=True, background=background)
+
+    db[constants.COL_TAGS].create_index([
+        ("count", DESCENDING)], 
+        name="count_idx", background=background)
+
+    db[constants.COL_TAGS].create_index([
+        ("count_datasets", DESCENDING)], 
+        name="count_datasets_idx", 
+        background=background,
+        partialFilterExpression={"count_datasets": {"$exists": True}})
+
+    db[constants.COL_TAGS].create_index([
+        ("count_series", DESCENDING)], 
+        name="count_series_idx", 
+        background=background,
+        partialFilterExpression={"count_series": {"$exists": True}})
 
     UPDATE_INDEXES = True
 
