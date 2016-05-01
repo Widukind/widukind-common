@@ -44,7 +44,7 @@ def str_to_tags(value_str):
     tags = _translate(value_str)
     
     if tags:
-        return [a for a in tags if not a in [None] + constants.TAGS_EXCLUDE_WORDS + ["-", "_", " "] and len(a.strip()) >= TAGS_MIN_CHAR]    
+        return [a for a in tags if not a.isdigit() and not a in [None] + constants.TAGS_EXCLUDE_WORDS + ["-", "_", " "] and len(a.strip()) >= TAGS_MIN_CHAR]    
     return []
 
 def get_categories_tags_for_dataset(db, provider_name, dataset_code):
@@ -178,6 +178,8 @@ def generate_tags_series(db, doc, doc_provider, doc_dataset, categories_tags=[])
             code_value = search_dataset_codelists(key, code)
             if code_value:            
                 select_for_tags.append(code_value)
+            else:
+                select_for_tags.append(code)
 
     if doc['frequency'] in constants.FREQUENCIES_DICT:
         select_for_tags.append(constants.FREQUENCIES_DICT[doc['frequency']])
@@ -236,6 +238,8 @@ def generate_tags_series_async(doc, doc_provider, doc_dataset):
             code_value = search_dataset_codelists(key, code)
             if code_value:            
                 yield code_value
+            else:
+                yield code
 
     if doc['frequency'] in constants.FREQUENCIES_DICT:
         yield constants.FREQUENCIES_DICT[doc['frequency']]
@@ -282,7 +286,7 @@ def run_bulk(bulk=None):
         #TODO: bulk.execute({'w': 3, 'wtimeout': 1})
         return result
     except BulkWriteError as err:        
-        #pprint(err.details)
+        pprint(err.details)
         raise
 
 #TODO: remove
@@ -729,11 +733,11 @@ def _aggregate_tags(db, source_col, target_col, add_match=None, max_bulk=20):
     
     pipeline = [
       {"$match": match},
-      {'$project': { '_id': 0, 'tags': 1, 'provider_name': 1}},
+      {'$project': { '_id': 0, 'tags': 1, 'provider_name': 1, 'dataset_code': 1, 'slug': 1}},
       {"$unwind": "$tags"},
-      {"$group": {"_id": {"tag": "$tags", 'provider_name': "$provider"}, "count": {"$sum": 1}}},
-      {'$project': { 'tag': "$_id.tag", 'count': 1, 'provider_name': {"name": "$_id.provider", "count": "$count"}}},
-      {"$group": {"_id": "$tag", "count": {"$sum": "$count"}, "providers":{ "$addToSet": "$provider" } }},
+      {"$group": {"_id": {"tag": "$tags", 'provider_name': "$provider_name", 'dataset_code': "$dataset_code", 'slug': '$slug'}, "count": {"$sum": 1}}},
+      {'$project': { 'tag': "$_id.tag", 'count': 1, "provider_name": "$_id.provider_name", 'dataset_code': "$_id.dataset_code", "slug": "$_id.slug"}}, 
+      {"$group": {"_id": "$tag", "count": {"$sum": "$count"}, "slug":{ "$addToSet": "$slug" }, "provider_name":{ "$addToSet": "$provider_name" }, "dataset_code":{ "$addToSet": "$dataset_code" } }},
       #{"$sort": SON([("count", -1), ("_id", -1)])}      
     ]
     
@@ -742,10 +746,24 @@ def _aggregate_tags(db, source_col, target_col, add_match=None, max_bulk=20):
     result = db[source_col].aggregate(pipeline, allowDiskUse=True)
     
     for doc in result:
+        if doc["_id"] in constants.TAGS_EXCLUDE_WORDS or doc["_id"].isdigit():
+            continue
+        
         update = {
-            '$addToSet': {'providers': {"$each": doc['providers']}},
-            "$set": {"count": doc['count']}
+            '$addToSet': {
+                #slug_field: {"$each": doc['slug']}, 
+                'dataset_code': {"$each": doc['dataset_code']}, 
+                'provider_name': {"$each": doc['provider_name']}, 
+            },
+            "$inc": {"count": doc['count']}, 
+            "$set": {"enable": True}
         }
+        if source_col == constants.COL_DATASETS:
+            update["$addToSet"]["datasets"] = {"$each": doc['slug']}
+            update["$inc"]["count_datasets"] = doc['count']
+        elif source_col == constants.COL_SERIES:
+            update["$inc"]["count_series"] = doc['count']
+        
         bulk.find({'name': doc['_id']}).upsert().update_one(update)
         count += 1
         
@@ -761,42 +779,16 @@ def _aggregate_tags(db, source_col, target_col, add_match=None, max_bulk=20):
     return bulk_result_aggregate(bulk_result)
     
 def aggregate_tags_datasets(db, max_bulk=20):
-    """
-    >>> pp(list(db.tags.datasets.find().sort([("count", -1)]))[0])
-    {'_id': ObjectId('565ade73426049c4cea21c0e'),
-     'count': 10,
-     'name': 'france',
-     'providers': [{'count': 8, 'name': 'BIS'},
-                   {'count': 1, 'name': 'OECD'},
-                   {'count': 1, 'name': 'Eurostat'}]}
-                   
-    db.tags.datasets.distinct("name")
-    
-    TOP 10:
-        >>> pp(list(db.tags.datasets.find({}).sort([("count", -1)])[:10]))
-        [{'_id': ObjectId('565ade73426049c4cea21c0e'),
-          'count': 10,
-          'name': 'france',
-          'providers': [{'count': 8, 'name': 'BIS'},
-                        {'count': 1, 'name': 'OECD'},
-                        {'count': 1, 'name': 'Eurostat'}]},
-         {'_id': ObjectId('565ade73426049c4cea21c7d'),
-          'count': 10,
-          'name': 'norway',
-          'providers': [{'count': 8, 'name': 'BIS'},
-                        {'count': 1, 'name': 'OECD'},
-                        {'count': 1, 'name': 'Eurostat'}]},                       
-                               
-    """
     return _aggregate_tags(db, 
                            constants.COL_DATASETS, 
-                           constants.COL_TAGS_DATASETS,
-                           add_match={"enable": True}, 
+                           constants.COL_TAGS,
+                           #add_match={"enable": True, "provider_name": "INSEE", "dataset_code": {"$in": ["IPI-2010-A10", "IPI-2010-A17"]}}, 
                            max_bulk=max_bulk)
 
 def aggregate_tags_series(db, max_bulk=20):
     #FIXME: dataset enable !
     return _aggregate_tags(db, 
                            constants.COL_SERIES, 
-                           constants.COL_TAGS_SERIES, 
+                           constants.COL_TAGS, 
+                           #add_match={"provider_name": "INSEE", "dataset_code": {"$in": ["IPI-2010-A10", "IPI-2010-A17"]}},
                            max_bulk=max_bulk)
