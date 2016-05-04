@@ -8,8 +8,7 @@ import pymongo
 from pymongo import UpdateOne
 
 from widukind_common import utils
-
-from dlstats import constants
+from widukind_common import constants
 
 logger = logging.getLogger(__name__)
 

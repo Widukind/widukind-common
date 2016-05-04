@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from dlstats.tests.base import BaseDBTestCase
-
-from dlstats import constants
-
 from widukind_common.tasks import consolidate
+
+from widukind_common import constants
+from widukind_common.tests.base import BaseDBTestCase
 
 class ConsolidateTasksTestCase(BaseDBTestCase):
     
