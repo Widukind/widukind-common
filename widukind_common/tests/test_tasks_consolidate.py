@@ -113,8 +113,8 @@ class ConsolidateTasksTestCase(BaseDBTestCase):
 
         self.assertEqual(dataset["concepts"], self.datas_after["concepts"])
         self.assertEqual(dataset["codelists"], self.datas_after["codelists"])
-        self.assertEqual(dataset["dimension_keys"], self.datas_after["dimension_keys"])
-        self.assertEqual(dataset["attribute_keys"], self.datas_after["attribute_keys"])
+        self.assertEqual(sorted(dataset["dimension_keys"]), sorted(self.datas_after["dimension_keys"]))
+        self.assertEqual(sorted(dataset["attribute_keys"]), sorted(self.datas_after["attribute_keys"]))
         
 
         modified = consolidate.consolidate_dataset(provider_name=self.dataset["provider_name"], 
@@ -144,8 +144,8 @@ class ConsolidateTasksTestCase(BaseDBTestCase):
 
         self.assertEqual(dataset["concepts"], self.datas_after["concepts"])
         self.assertEqual(dataset["codelists"], self.datas_after["codelists"])
-        self.assertEqual(dataset["dimension_keys"], self.datas_after["dimension_keys"])
-        self.assertEqual(dataset["attribute_keys"], self.datas_after["attribute_keys"])
+        self.assertEqual(sorted(dataset["dimension_keys"]), sorted(self.datas_after["dimension_keys"]))
+        self.assertEqual(sorted(dataset["attribute_keys"]), sorted(self.datas_after["attribute_keys"]))
         
 
         result = consolidate.consolidate_all_dataset(provider_name=self.dataset["provider_name"], 
