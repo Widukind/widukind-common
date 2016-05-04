@@ -131,7 +131,7 @@ class GenerateTagsTestCase(BaseDBTestCase):
         tags = tags_utils.generate_tags_series(self.db, series, 
                                                self.doc_provider, 
                                                dataset)
-        self.assertEqual(tags, ['country', 'd1', 'estimate', 'france', 'mars', 'monthly', 'observation', 'p1', 'provider', 'series', 'status', 'test', 'x1'])
+        self.assertEqual(tags, ['country', 'd1', 'dataset', 'estimate', 'france', 'mars', 'monthly', 'observation', 'p1', 'provider', 'series', 'status', 'test', 'x1'])
 
 class UpdateTagsTestCase(BaseDBTestCase):
     
@@ -273,7 +273,7 @@ class UpdateTagsTestCase(BaseDBTestCase):
                  "key": series["key"]}
         series_doc = self.db[constants.COL_SERIES].find_one(query)
         self.assertIsNotNone(series_doc)
-        self.assertEqual(series_doc["tags"], ['country', 'd1', 'estimate', 'france', 'mars', 'monthly', 'observation', 'p1', 'provider', 'series', 'status', 'test', 'x1'])
+        self.assertEqual(series_doc["tags"], ['country', 'd1', 'dataset', 'estimate', 'france', 'mars', 'monthly', 'observation', 'p1', 'provider', 'series', 'status', 'test', 'x1'])
         
 @unittest.skipIf(True, "TODO")    
 class SearchTagsTestCase(BaseDBTestCase):

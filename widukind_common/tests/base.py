@@ -28,12 +28,15 @@ class BaseDBTestCase(BaseTestCase):
 
         self._collections_is_empty()
                 
-        create_or_update_indexes(self.db, force_mode=True)
+        create_or_update_indexes(self.db, force_mode=True, background=False)
+
+    def tearDown(self):
+        unittest.TestCase.tearDown(self)
+        try:
+            self.db.client.close()
+        except:
+            pass
 
     def _collections_is_empty(self):
-        self.assertEqual(self.db[constants.COL_PROVIDERS].count(), 0)
-        self.assertEqual(self.db[constants.COL_CATEGORIES].count(), 0)
-        self.assertEqual(self.db[constants.COL_DATASETS].count(), 0)
-        self.assertEqual(self.db[constants.COL_SERIES].count(), 0)
-        #self.assertEqual(self.db[constants.COL_TAGS].count(), 0)
-        
+        for col in constants.COL_ALL:
+            self.assertEqual(self.db[col].count(), 0)
