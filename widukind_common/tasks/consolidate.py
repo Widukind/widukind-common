@@ -91,10 +91,10 @@ def consolidate_dataset(provider_name=None, dataset_code=None, db=None, execute=
             
         for v in series.get("values"):
             if v.get("attributes"):
-                for k, v in v.get("attributes").items():
-                    if not k in dataset["codelists"] or not v: continue
-                    if not k in codelists: codelists[k] = []
-                    if not v in codelists[k]: codelists[k].append(v)
+                for k1, v1 in v.get("attributes").items():
+                    if not k1 in dataset["codelists"]: continue# or not v1: continue
+                    if not k1 in codelists: codelists[k1] = []
+                    if not v1 in codelists[k1]: codelists[k1].append(v1)
     
     if logger.isEnabledFor(logging.DEBUG):
         for k, v in dataset["codelists"].items():
@@ -112,13 +112,14 @@ def consolidate_dataset(provider_name=None, dataset_code=None, db=None, execute=
             for v1 in codelists[k]:
                 if v1 in values:
                     new_values[v1] = values[v1]
-            if len(new_values) > 0:
-                new_codelists[k] = new_values
-                new_concepts[k] = dataset["concepts"].get(k)
-                if k in dataset["dimension_keys"]:
-                    new_dimension_keys.append(k)
-                elif k in dataset["attribute_keys"]:
-                    new_attribute_keys.append(k)
+            
+            new_codelists[k] = new_values
+            new_concepts[k] = dataset["concepts"].get(k)
+            
+            if k in dataset["dimension_keys"]:
+                new_dimension_keys.append(k)
+            elif k in dataset["attribute_keys"]:
+                new_attribute_keys.append(k)
     
     if logger.isEnabledFor(logging.DEBUG):
         for k, v in new_codelists.items():
