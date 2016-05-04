@@ -22,7 +22,8 @@ class ConsolidateTasksTestCase(BaseDBTestCase):
                 "FREQ": "Frequency",
                 "OBS_STATUS": "Observation Status",
                 "CURRENCY": "Currency",
-                "COUNTRY": "Country"
+                "COUNTRY": "Country",
+                "OBS_COM": "Observation comment",
             },
             "codelists": {
                 "FREQ": {
@@ -40,7 +41,8 @@ class ConsolidateTasksTestCase(BaseDBTestCase):
                 "COUNTRY": {
                     "FRA": "France",
                     "AUS": "Autralie",
-                }
+                },
+                "OBS_COM": {}
             },
             "dimension_keys": ["FREQ", "COUNTRY"],
             "attribute_keys": ["CURRENCY", "OBS_STATUS"],
@@ -54,7 +56,7 @@ class ConsolidateTasksTestCase(BaseDBTestCase):
             "slug": "p1-d1-x1",
             "frequency": "M",
             "dimensions": {
-                "COUNTRY": "FRA"                
+                "COUNTRY": "FRA"
             },
             "attributes": {
                 "CURRENCY": "D"
@@ -62,7 +64,8 @@ class ConsolidateTasksTestCase(BaseDBTestCase):
             'values': [
                 {
                     'attributes': {
-                        'OBS_STATUS': 'E'
+                        'OBS_STATUS': 'E',
+                        'OBS_COM': "not"
                     },
                 },
                 {
@@ -75,7 +78,8 @@ class ConsolidateTasksTestCase(BaseDBTestCase):
             "concepts": {
                 "OBS_STATUS": "Observation Status",
                 "CURRENCY": "Currency",
-                "COUNTRY": "Country"
+                "COUNTRY": "Country",
+                "OBS_COM": "Observation comment",
             },
             "codelists": {
                 "OBS_STATUS": {
@@ -86,7 +90,8 @@ class ConsolidateTasksTestCase(BaseDBTestCase):
                 },
                 "COUNTRY": {
                     "FRA": "France",
-                }
+                },
+                "OBS_COM": {}
             },
             "dimension_keys": ["COUNTRY"],
             "attribute_keys": ["CURRENCY", "OBS_STATUS"],
