@@ -18,12 +18,15 @@ class ConsolidateTasksTestCase(BaseDBTestCase):
             "dataset_code": "d1",
             "name": "dataset 1",
             "slug": "p1-d1",
+            "dimension_keys": ["FREQ", "COUNTRY", "B"],
+            "attribute_keys": ["CURRENCY", "OBS_STATUS"],
             "concepts": {
                 "FREQ": "Frequency",
                 "OBS_STATUS": "Observation Status",
                 "CURRENCY": "Currency",
                 "COUNTRY": "Country",
                 "OBS_COM": "Observation comment",
+                "B": "test concept"
             },
             "codelists": {
                 "FREQ": {
@@ -42,10 +45,11 @@ class ConsolidateTasksTestCase(BaseDBTestCase):
                     "FRA": "France",
                     "AUS": "Autralie",
                 },
+                "B": {
+                    "VALUE1": "Value1"
+                },
                 "OBS_COM": {}
-            },
-            "dimension_keys": ["FREQ", "COUNTRY"],
-            "attribute_keys": ["CURRENCY", "OBS_STATUS"],
+            }
         }
         
         self.series = {
@@ -56,7 +60,8 @@ class ConsolidateTasksTestCase(BaseDBTestCase):
             "slug": "p1-d1-x1",
             "frequency": "M",
             "dimensions": {
-                "COUNTRY": "FRA"
+                "COUNTRY": "FRA",
+                "B": "VALUE1"
             },
             "attributes": {
                 "CURRENCY": "D"
@@ -80,6 +85,7 @@ class ConsolidateTasksTestCase(BaseDBTestCase):
                 "CURRENCY": "Currency",
                 "COUNTRY": "Country",
                 "OBS_COM": "Observation comment",
+                "B": "test concept"
             },
             "codelists": {
                 "OBS_STATUS": {
@@ -91,9 +97,12 @@ class ConsolidateTasksTestCase(BaseDBTestCase):
                 "COUNTRY": {
                     "FRA": "France",
                 },
+                "B": {
+                    "VALUE1": "Value1"
+                },
                 "OBS_COM": {}
             },
-            "dimension_keys": ["COUNTRY"],
+            "dimension_keys": ["COUNTRY", "B"],
             "attribute_keys": ["CURRENCY", "OBS_STATUS"],
         }
         
@@ -118,10 +127,11 @@ class ConsolidateTasksTestCase(BaseDBTestCase):
 
         self.assertEqual(dataset["concepts"], self.datas_after["concepts"])
         self.assertEqual(dataset["codelists"], self.datas_after["codelists"])
-        self.assertEqual(sorted(dataset["dimension_keys"]), sorted(self.datas_after["dimension_keys"]))
-        self.assertEqual(sorted(dataset["attribute_keys"]), sorted(self.datas_after["attribute_keys"]))
+        self.assertEqual(dataset["dimension_keys"], self.datas_after["dimension_keys"])
+        self.assertEqual(dataset["attribute_keys"], self.datas_after["attribute_keys"])
         
 
+        '''not change'''
         modified = consolidate.consolidate_dataset(provider_name=self.dataset["provider_name"], 
                                                    dataset_code=self.dataset["dataset_code"], 
                                                    db=self.db, 
@@ -149,10 +159,11 @@ class ConsolidateTasksTestCase(BaseDBTestCase):
 
         self.assertEqual(dataset["concepts"], self.datas_after["concepts"])
         self.assertEqual(dataset["codelists"], self.datas_after["codelists"])
-        self.assertEqual(sorted(dataset["dimension_keys"]), sorted(self.datas_after["dimension_keys"]))
-        self.assertEqual(sorted(dataset["attribute_keys"]), sorted(self.datas_after["attribute_keys"]))
+        self.assertEqual(dataset["dimension_keys"], self.datas_after["dimension_keys"])
+        self.assertEqual(dataset["attribute_keys"], self.datas_after["attribute_keys"])
         
 
+        '''not change'''
         result = consolidate.consolidate_all_dataset(provider_name=self.dataset["provider_name"], 
                                                      db=self.db)
         
