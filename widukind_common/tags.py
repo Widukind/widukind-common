@@ -132,7 +132,7 @@ def generate_tags_dataset(db, doc, doc_provider, categories_tags=[]):
         
     return sorted(list(set(tags)))
 
-def generate_tags_series(db, doc, doc_provider, doc_dataset, categories_tags=[]):
+def generate_tags_series(doc, doc_provider, doc_dataset, categories_tags=[]):
     """Split and filter datas for return array of tags
     
     Used in update_tags()
@@ -410,7 +410,7 @@ def _update_tags_series_unit(db,
                                              #no_cursor_timeout=True
                                              ):
 
-        tags = generate_tags_series(db, doc, provider, dataset)#, categories_tags)
+        tags = generate_tags_series(doc, provider, dataset)#, categories_tags)
     
         if logger.isEnabledFor(logging.DEBUG):
             msg = "update tags for series[%s] - dataset[%s] - provider[%s] - tags%s" 
@@ -438,7 +438,7 @@ def _update_tags_series(db, provider_name=None, dataset_code=None,
     if dataset_code:
         dataset_query["dataset_code"] = dataset_code
 
-    dataset_ids = db[constants.COL_DATASETS].distinct("_id", dataset_query)
+    dataset_ids = db[constants.COL_DATASETS].find(dataset_query).distinct("_id")
     
     for _id in dataset_ids:
         doc_dataset = db[constants.COL_DATASETS].find_one({"_id": _id}, dataset_projection)

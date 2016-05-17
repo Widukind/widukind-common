@@ -14,9 +14,11 @@ logger = logging.getLogger(__name__)
 
 def _run_bulk(db, bulk_requests):
     try:
-        return db[constants.COL_DATASETS].bulk_write(bulk_requests, ordered=False)
+        return bulk_requests.execute()
     except pymongo.errors.BulkWriteError as err:
         logger.critical(str(err.details))
+    except Exception as err:
+        logger.critical(str(err))
 
 def hash_dict(d):
     return hashlib.sha1(json.dumps(d, sort_keys=True).encode()).hexdigest()     
@@ -30,7 +32,8 @@ def consolidate_all_dataset(provider_name=None, db=None, max_bulk=20):
     
     cursor = db[constants.COL_DATASETS].find(query, projection)
 
-    bulk_requests = []
+    bulk_requests = db[constants.COL_DATASETS].initialize_unordered_bulk_op()
+    bulk_size = 0
     results = []
     
     for dataset in cursor:
@@ -41,15 +44,17 @@ def consolidate_all_dataset(provider_name=None, db=None, max_bulk=20):
             logger.warning("bypass dataset [%s]" % dataset["dataset_code"])
             continue
         
-        bulk_requests.append(UpdateOne(query, query_modify))
+        bulk_size += 1
+        bulk_requests.find(query).update_one(query_modify)
     
-        if len(bulk_requests) > max_bulk:
+        if bulk_size > max_bulk:
             result = _run_bulk(db, bulk_requests)
             if result:
                 results.append(result)
-            bulk_requests = []
+            bulk_requests = db[constants.COL_DATASETS].initialize_unordered_bulk_op()
+            bulk_size = 0
     
-    if len(bulk_requests) > 0:
+    if bulk_size > 0:
         result = _run_bulk(db, bulk_requests)
         if result:
             results.append(result)
@@ -59,8 +64,8 @@ def consolidate_all_dataset(provider_name=None, db=None, max_bulk=20):
         "modified_count": 0,
     }
     for r in results:
-        results_details["matched_count"] += r.matched_count
-        results_details["modified_count"] += r.modified_count
+        results_details["matched_count"] += r["nMatched"]
+        results_details["modified_count"] += r["nModified"]
 
     return results_details
 
@@ -92,7 +97,7 @@ def consolidate_dataset(provider_name=None, dataset_code=None, db=None, execute=
         for v in series.get("values"):
             if v.get("attributes"):
                 for k1, v1 in v.get("attributes").items():
-                    if not k1 in dataset["codelists"]: continue# or not v1: continue
+                    if not k1 in dataset["codelists"]: continue
                     if not k1 in codelists: codelists[k1] = []
                     if not v1 in codelists[k1]: codelists[k1].append(v1)
     
@@ -100,6 +105,8 @@ def consolidate_dataset(provider_name=None, dataset_code=None, db=None, execute=
         for k, v in dataset["codelists"].items():
             logger.debug("BEFORE - codelist[%s]: %s" % (k, len(v)))
         logger.debug("BEFORE - concepts[%s]" % list(dataset["concepts"].keys()))
+        logger.debug("BEFORE - dimension_keys[%s]" % dataset["dimension_keys"])
+        logger.debug("BEFORE - attribute_keys[%s]" % dataset["attribute_keys"])
     
     new_codelists = {}
     new_concepts = {}
@@ -107,9 +114,11 @@ def consolidate_dataset(provider_name=None, dataset_code=None, db=None, execute=
     new_attribute_keys = []
     
     for k, values in dataset["codelists"].items():
+        '''if entry in codelists from series'''
         if k in codelists:
             new_values = {}
             for v1 in codelists[k]:
+                '''if codelist value in codelists from dataset'''
                 if v1 in values:
                     new_values[v1] = values[v1]
             
@@ -117,21 +126,34 @@ def consolidate_dataset(provider_name=None, dataset_code=None, db=None, execute=
             new_concepts[k] = dataset["concepts"].get(k)
             
             if k in dataset["dimension_keys"]:
+                '''unordered dimension_keys'''
                 new_dimension_keys.append(k)
             elif k in dataset["attribute_keys"]:
+                '''unordered attribute_keys'''
                 new_attribute_keys.append(k)
     
+    '''original ordered for dimension_keys'''
+    dimension_keys = [k for k in dataset["dimension_keys"] if k in new_dimension_keys]
+    '''original ordered for attribute_keys'''
+    attribute_keys = [k for k in dataset.get("attribute_keys") if k in new_attribute_keys]
+
     if logger.isEnabledFor(logging.DEBUG):
         for k, v in new_codelists.items():
             logger.debug("AFTER - codelist[%s]: %s" % (k, len(v)))
         logger.debug("AFTER - concepts[%s]" % list(new_concepts.keys()))
-    
-    is_modify = hash_dict(new_codelists) == hash_dict(codelists)
+        logger.debug("AFTER - dimension_keys[%s]" % dimension_keys)
+        logger.debug("AFTER - attribute_keys[%s]" % attribute_keys)
 
-    if not is_modify and hash_dict(new_concepts) != hash_dict(dataset["concepts"]):
+    '''verify change in codelists'''
+    #is_modify = hash_dict(new_codelists) == hash_dict(dataset["codelists"])
+    is_modify = new_codelists != dataset["codelists"]
+
+    '''verify change in concepts'''
+    #if not is_modify and hash_dict(new_concepts) != hash_dict(dataset["concepts"]):
+    if is_modify is False and new_concepts != dataset["concepts"]:
         is_modify = True
     
-    if not is_modify:
+    if is_modify is False:
         if execute:
             return None
         else:
@@ -141,14 +163,12 @@ def consolidate_dataset(provider_name=None, dataset_code=None, db=None, execute=
     query_modify = {"$set": {
         "codelists": new_codelists, 
         "concepts": new_concepts,
-        "dimension_keys": new_dimension_keys,
-        "attribute_keys": new_attribute_keys
+        "dimension_keys": dimension_keys,
+        "attribute_keys": attribute_keys
     }}
     
     if execute:
         return db[constants.COL_DATASETS].update_one(query, query_modify).modified_count
     else:
         return query, query_modify
-    
-    
     
