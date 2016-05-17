@@ -24,6 +24,8 @@ COL_QUERIES = "queries"
 
 COL_LOGS = "logs"
 
+COL_STATS_RUN = "stats_run"
+
 COL_ALL = [
     COL_CATEGORIES,
     COL_PROVIDERS,
