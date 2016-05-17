@@ -11,7 +11,7 @@ from pymongo import ASCENDING, DESCENDING
 from widukind_common import constants
 
 def get_mongo_url():
-    return constants.MONGODB_URL
+    return constants.MONGODB_URL.strip('"')
 
 def get_mongo_client(url=None, connect=False):
     # TODO: tz_aware
@@ -199,10 +199,6 @@ def configure_logging(debug=False, stdout_enable=True, config_file=None,
             },      
         },
         'loggers': {
-            'requests.packages.urllib3': {
-                'handlers': ['null'],
-                'level': 'NOTSET',
-            },
             '': {
                 'handlers': [],
                 'level': level,
@@ -211,6 +207,8 @@ def configure_logging(debug=False, stdout_enable=True, config_file=None,
     
         },
     }
+    
+    logging.getLogger("requests.packages.urllib3.connectionpool").setLevel(logging.ERROR)
     
     if stdout_enable:
         if not 'console' in LOGGING['loggers']['']['handlers']:
@@ -232,3 +230,18 @@ def configure_logging(debug=False, stdout_enable=True, config_file=None,
 
 def utcnow():
     return arrow.utcnow().datetime
+
+def load_klass(name):
+    
+    if not name:
+        raise ValueError("name is required")
+
+    module_name = ".".join(name.split(".")[:-1])
+    klass_name = name.split(".")[-1]
+    
+    if not module_name in sys.modules:
+        __import__(module_name)
+        
+    mod = sys.modules[module_name]
+    
+    return getattr(mod, klass_name)
