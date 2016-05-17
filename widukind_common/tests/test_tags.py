@@ -128,7 +128,7 @@ class GenerateTagsTestCase(BaseDBTestCase):
             },
         }
         
-        tags = tags_utils.generate_tags_series(self.db, series, 
+        tags = tags_utils.generate_tags_series(series, 
                                                self.doc_provider, 
                                                dataset)
         self.assertEqual(tags, ['country', 'd1', 'dataset', 'estimate', 'france', 'mars', 'monthly', 'observation', 'p1', 'provider', 'series', 'status', 'test', 'x1'])
