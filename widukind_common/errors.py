@@ -1,4 +1,11 @@
 
+class Locked(Exception):
+    def __init__(self, *args, **kwargs):
+        self.key = kwargs.pop("key", None)
+        self.owner = kwargs.pop("owner", None)
+        self.comments = kwargs.pop("comments", None)
+        super().__init__(*args, **kwargs)
+
 class DlstatsException(Exception):
     
     def __init__(self, *args, **kwargs):
