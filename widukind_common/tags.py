@@ -438,7 +438,7 @@ def _update_tags_series(db, provider_name=None, dataset_code=None,
     if dataset_code:
         dataset_query["dataset_code"] = dataset_code
 
-    dataset_ids = db[constants.COL_DATASETS].distinct("_id", dataset_query)
+    dataset_ids = db[constants.COL_DATASETS].find(dataset_query).distinct("_id")
     
     for _id in dataset_ids:
         doc_dataset = db[constants.COL_DATASETS].find_one({"_id": _id}, dataset_projection)
