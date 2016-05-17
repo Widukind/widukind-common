@@ -96,7 +96,7 @@ def complex_queries_series(query={}):
             query_and.append(q_or)
 
         for key, values in query_nor_by_field.items():
-            q_or = {"$or": [
+            q_or = {"$nor": [
                 {"dimensions.%s" % key: {"$in": values}},
                 {"attributes.%s" % key: {"$in": values}},
             ]}
