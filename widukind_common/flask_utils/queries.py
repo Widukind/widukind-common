@@ -44,7 +44,9 @@ def col_counters(db=None):
     db = db or current_app.widukind_db
     return db[constants.COL_COUNTERS].with_options(read_preference=ReadPreference.SECONDARY)
 
-def complex_queries_series(query={}):
+def complex_queries_series(query={}, 
+                           search_attributes=True, 
+                           bypass_args=['limit', 'tags', 'provider', 'dataset']):
 
     tags = request.args.get('tags', None)
     
@@ -52,7 +54,7 @@ def complex_queries_series(query={}):
     query_and = []
     
     for r in request.args.lists():
-        if r[0] in ['limit', 'tags', 'provider', 'dataset']:
+        if r[0] in bypass_args:
             continue
         elif r[0] == 'frequency':
             query['frequency'] = r[1][0]
@@ -91,15 +93,19 @@ def complex_queries_series(query={}):
         for key, values in query_or_by_field.items():
             q_or = {"$or": [
                 {"dimensions.%s" % key: {"$in": values}},
-                {"attributes.%s" % key: {"$in": values}},
             ]}
+            if search_attributes:
+                q_or["$or"].append({"attributes.%s" % key: {"$in": values}})
+                
             query_and.append(q_or)
 
         for key, values in query_nor_by_field.items():
             q_or = {"$nor": [
                 {"dimensions.%s" % key: {"$in": values}},
-                {"attributes.%s" % key: {"$in": values}},
             ]}
+            if search_attributes:
+                q_or["$nor"].append({"attributes.%s" % key: {"$in": values}})
+            
             query_and.append(q_or)
 
     if query_and:
