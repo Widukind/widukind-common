@@ -36,12 +36,15 @@ def json_response_async(docs, meta={}):
     count = len(docs)    
     
     def generate():
-        yield '{"meta": {}, "data": ['
+        yield '{"data": ['
         for i, row in enumerate(docs):
             yield json.dumps(row, default=json_convert, indent=indent)
             if i < count -1:
                 yield ","
-        yield "]}"
+        yield "]"
+        if meta:
+            yield ', "meta": ' + json.dumps(meta, default=json_convert, indent=indent)
+        yield "}"
 
     return app.response_class(generate(), mimetype='application/json')    
 
