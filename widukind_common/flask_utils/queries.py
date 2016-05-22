@@ -22,8 +22,9 @@ __all__ = [
     
     'get_provider',
     'get_dataset',
+    'col_stats_run',
     
-    'Pagination'
+    'Pagination',
 ]
 
 def col_providers(db=None):
@@ -46,6 +47,10 @@ def col_counters(db=None):
     db = db or current_app.widukind_db
     return db[constants.COL_COUNTERS].with_options(read_preference=ReadPreference.SECONDARY)
 
+def col_stats_run(db=None):
+    db = db or current_app.widukind_db
+    return db[constants.COL_STATS_RUN].with_options(read_preference=ReadPreference.SECONDARY)
+
 def complex_queries_series(query={}, 
                            search_attributes=True, 
                            bypass_args=['limit', 
@@ -53,7 +58,8 @@ def complex_queries_series(query={},
                                         'provider', 
                                         'dataset',
                                         'per_page',
-                                        'page']):
+                                        'page',
+                                        'format']):
 
     tags = request.args.get('tags', None)
     
