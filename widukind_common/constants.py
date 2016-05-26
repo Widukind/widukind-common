@@ -57,6 +57,7 @@ FREQ_ANNUALY = "A"
 FREQ_QUATERLY = "Q"
 FREQ_MONTHLY = "M"
 FREQ_WEEKLY = "W"
+FREQ_WEEKLY_WED = "W-WED"
 FREQ_DAILY = "D"
 FREQ_HOURLY = "H"
 
@@ -65,6 +66,7 @@ FREQUENCIES = (
     (FREQ_MONTHLY, "Monthly"),
     (FREQ_QUATERLY, "Quarterly"),
     (FREQ_WEEKLY, "Weekly"),
+    (FREQ_WEEKLY_WED, "Weekly Wednesday"),
     (FREQ_DAILY, "Daily"),
     (FREQ_HOURLY, "Hourly"),
 )
