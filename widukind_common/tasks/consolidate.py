@@ -5,7 +5,6 @@ import json
 import hashlib
 
 import pymongo
-from pymongo import UpdateOne
 
 from widukind_common import utils
 from widukind_common import constants
@@ -28,15 +27,18 @@ def consolidate_all_dataset(provider_name=None, db=None, max_bulk=20):
     db = db or utils.get_mongo_db()
     
     query = {"provider_name": provider_name}
-    projection = {"_id": False, "dataset_code": True}
+    projection = {"_id": True, "dataset_code": True}
     
     cursor = db[constants.COL_DATASETS].find(query, projection)
+    dataset_ids = [doc["_id"] for doc in cursor]
 
     bulk_requests = db[constants.COL_DATASETS].initialize_unordered_bulk_op()
     bulk_size = 0
     results = []
     
-    for dataset in cursor:
+    for _id in dataset_ids:
+        
+        dataset = db[constants.COL_DATASETS].find_one(query, projection)
 
         query, query_modify = consolidate_dataset(provider_name, dataset["dataset_code"], db=db, execute=False)
         
