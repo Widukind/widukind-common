@@ -30,20 +30,18 @@ def consolidate_all_dataset(provider_name=None, db=None, max_bulk=20):
     projection = {"_id": True, "dataset_code": True}
     
     cursor = db[constants.COL_DATASETS].find(query, projection)
-    dataset_ids = [doc["_id"] for doc in cursor]
+    dataset_codes = [doc["dataset_code"] for doc in cursor]
 
     bulk_requests = db[constants.COL_DATASETS].initialize_unordered_bulk_op()
     bulk_size = 0
     results = []
     
-    for _id in dataset_ids:
+    for dataset_code in dataset_codes:
         
-        dataset = db[constants.COL_DATASETS].find_one(query, projection)
-
-        query, query_modify = consolidate_dataset(provider_name, dataset["dataset_code"], db=db, execute=False)
+        query, query_modify = consolidate_dataset(provider_name, dataset_code, db=db, execute=False)
         
         if not query:
-            logger.warning("bypass dataset [%s]" % dataset["dataset_code"])
+            logger.warning("bypass dataset [%s]" % dataset_code)
             continue
         
         bulk_size += 1
