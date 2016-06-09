@@ -142,14 +142,16 @@ def get_provider(slug, projection=None):
 def get_dataset(slug, projection=None):
     ds_projection = projection or {"_id": False, "slug": True, "name": True,
                                    "provider_name": True, "dataset_code": True,
-                                   "enable": True}    
+                                   "enable": True}
+    if "enable" in ds_projection and ds_projection["enable"] is False:
+        ds_projection["enable"] = True
     dataset_doc = col_datasets().find_one({"slug": slug},
                                           ds_projection)
     
     if not dataset_doc:
         abort(404)
     if dataset_doc["enable"] is False:
-        abort(404, "disable dataset.")
+        abort(307, "disable dataset.")
         
     return dataset_doc
     
