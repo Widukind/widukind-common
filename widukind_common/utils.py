@@ -1,14 +1,20 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import logging
 import logging.config
+from functools import wraps
+import time
 
 import arrow
     
 from pymongo import MongoClient
-from pymongo import ASCENDING, DESCENDING
+from pymongo import ASCENDING, DESCENDING, TEXT
+from pymongo.errors import AutoReconnect
 
 from widukind_common import constants
+
+logger = logging.getLogger(__name__)
 
 def get_mongo_url():
     return constants.MONGODB_URL.strip('"')
@@ -26,6 +32,15 @@ def get_mongo_db(url=None, **kwargs):
     return client.get_default_database()
 
 UPDATE_INDEXES = False
+
+INDEXES = [
+    {
+        "name": "key_idx",
+        "ns": constants.COL_CALENDARS,
+        "key": [("key", ASCENDING)],
+        "unique": True, 
+    },
+]
 
 def create_or_update_indexes(db, force_mode=False, background=True):
     """Create or update MongoDB indexes"""
@@ -104,7 +119,6 @@ def create_or_update_indexes(db, force_mode=False, background=True):
     db[constants.COL_SERIES].create_index([
         ('provider_name', ASCENDING), 
         ("dataset_code", ASCENDING), 
-        #("key", ASCENDING)
         ], 
         name="series1", 
         background=background)
@@ -121,17 +135,14 @@ def create_or_update_indexes(db, force_mode=False, background=True):
         ("tags", ASCENDING)], 
         name="series4", background=background)
 
-    #db[constants.COL_SERIES].create_index([
-    #    ("tags", ASCENDING),
-    #    ('provider_name', ASCENDING)], 
-    #    name="series5", background=background)
-
-    #db[constants.COL_SERIES].create_index([
-    #    ("tags", ASCENDING),
-    #    ('provider_name', ASCENDING), 
-    #    ("dataset_code", ASCENDING)], 
-    #    name="series6", background=background)
-
+    db[constants.COL_SERIES].create_index([
+        ("provider_name", ASCENDING),
+        ("$**", TEXT)], 
+        name="fulltext",
+        default_language="english", 
+        weights= { "key": 100, "name": 98, "dataset_code": 97, "provider_name": 96, "tags":95, "dimensions": 90, "attributes": 80 }, 
+        background=background)
+    
     db[constants.COL_SERIES].create_index([
         ("frequency", ASCENDING)], 
         name="series7", background=background)
@@ -203,12 +214,12 @@ def configure_logging(debug=False, stdout_enable=True, config_file=None,
                 'handlers': [],
                 'level': level,
                 'propagate': False,
-            },
-    
+            },    
         },
     }
     
     logging.getLogger("requests.packages.urllib3.connectionpool").setLevel(logging.ERROR)
+    logging.getLogger("dlstats.fetchers.insee").setLevel(logging.INFO)
     
     if stdout_enable:
         if not 'console' in LOGGING['loggers']['']['handlers']:
@@ -245,3 +256,47 @@ def load_klass(name):
     mod = sys.modules[module_name]
     
     return getattr(mod, klass_name)
+
+def retry_on_reconnect_error(retry_count=2, exponential_delay=True):
+    """
+    Automatic retry on PyMongo AutoReconnect exceptions.
+    Inspired by https://gist.github.com/inactivist/9086391
+    
+    Usage:
+    
+    @retry_on_reconnect_error()
+    def my_function():
+       ...
+    
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if retry_count < 1:
+                raise ValueError("retry_count must be 1 or higher.")
+            for i in range(retry_count):
+                try:
+                    logger.debug('trying db request %s', f)
+                    v = f(*args, **kwargs)
+                    logger.debug('db request %s success', f)
+                    return v
+                except AutoReconnect as e:
+                    if exponential_delay:
+                        method = "exponential"
+                        delay = pow(2, i)
+                    else:
+                        method = "simple"
+                        delay =.1
+
+                    logger.warn('Transient error %s (retry #%d)'
+                                                  ', method=%s sleeping %f',
+                                                  e,
+                                                  i+1,
+                                                  method,
+                                                  delay)
+                    time.sleep(delay)
+            msg = 'AutoReconnect retry failed.'
+            logger.error(msg)
+            raise Exception(msg)
+        return decorated_function
+    return decorator
