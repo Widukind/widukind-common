@@ -33,28 +33,38 @@ def get_mongo_db(url=None, **kwargs):
 
 UPDATE_INDEXES = False
 
-INDEXES = [
-    {
-        "name": "key_idx",
-        "ns": constants.COL_CALENDARS,
-        "key": [("key", ASCENDING)],
-        "unique": True, 
-    },
-]
+INDEXES = {
+    constants.COL_CALENDARS:
+        {
+            "name": "key_idx",
+            "ns": constants.COL_CALENDARS,
+            "key": [("key", ASCENDING)],
+            "unique": True, 
+        },
+}
 
-def create_or_update_indexes(db, force_mode=False, background=True):
+def create_or_update_indexes(db, force_mode=False, background=False):
     """Create or update MongoDB indexes"""
     
     global UPDATE_INDEXES
     
     if not force_mode and UPDATE_INDEXES:
         return
-
+    
+    indexes = {}
+    collection_names = db.collection_names()
+    for col in constants.COL_ALL:
+        if col in collection_names:
+            indexes[col] = db[col].index_information()
+    
     '''********* CALENDARS ********'''
 
-    db[constants.COL_CALENDARS].create_index([
-        ("key", ASCENDING)], 
-        name="key_idx", unique=True, background=background)
+    if not constants.COL_CALENDARS in indexes or not "key_idx" in indexes[constants.COL_CALENDARS]:
+        db[constants.COL_CALENDARS].create_index([
+            ("key", ASCENDING)], 
+            name="key_idx", unique=True, background=background)
+    else:
+        pass
 
     '''********* PROVIDERS ********'''
 
@@ -77,12 +87,11 @@ def create_or_update_indexes(db, force_mode=False, background=True):
         ('provider_name', ASCENDING), 
         ("category_code", ASCENDING)], 
         name="provider_category_idx", 
-        #unique=True, 
         background=background)
     
-    db[constants.COL_CATEGORIES].create_index([
-        ("tags", ASCENDING)], 
-        name="tags_idx", background=background)
+    #db[constants.COL_CATEGORIES].create_index([
+    #    ("tags", ASCENDING)], 
+    #    name="tags_idx", background=background)
 
     '''********* DATASETS *********'''
     
@@ -91,24 +100,24 @@ def create_or_update_indexes(db, force_mode=False, background=True):
         name="slug_idx", unique=True, background=background)
 
     db[constants.COL_DATASETS].create_index([
-        ("tags", ASCENDING)], 
-        name="tags_idx", background=background)
-    
-    db[constants.COL_DATASETS].create_index([
         ('provider_name', ASCENDING), 
         ("dataset_code", ASCENDING)], 
-        name="datasets1", 
+        unique=True, name="datasets1", 
         background=background)
 
     db[constants.COL_DATASETS].create_index([
         ('provider_name', ASCENDING), 
-        ("dataset_code", ASCENDING),
         ("tags", ASCENDING)], 
         name="datasets2", background=background)
 
     db[constants.COL_DATASETS].create_index([
         ("last_update", ASCENDING)], 
         name="datasets3")
+
+    db[constants.COL_DATASETS].create_index([
+        ("enable", ASCENDING)], 
+        name="disable_datasets",
+        partialFilterExpression={"enable": False})
 
     '''********* SERIES *********'''
 
@@ -118,16 +127,18 @@ def create_or_update_indexes(db, force_mode=False, background=True):
 
     db[constants.COL_SERIES].create_index([
         ('provider_name', ASCENDING), 
-        ("dataset_code", ASCENDING), 
-        ], 
-        name="series1", 
+        ("dataset_code", ASCENDING),
+        ("key", ASCENDING)], 
+        unique=True, name="series1", 
         background=background)
 
     db[constants.COL_SERIES].create_index([
+        #TODO: ('provider_name', ASCENDING),
         ("dimensions", ASCENDING)], 
         name="series2", background=background)
 
     db[constants.COL_SERIES].create_index([
+        #TODO: ('provider_name', ASCENDING),
         ("attributes", ASCENDING)], 
         name="series3", background=background)
 
@@ -137,10 +148,28 @@ def create_or_update_indexes(db, force_mode=False, background=True):
 
     db[constants.COL_SERIES].create_index([
         ("provider_name", ASCENDING),
-        ("$**", TEXT)], 
+        ('dataset_code', TEXT),
+        ('name', TEXT),
+        ('key', TEXT),
+        ('slug', TEXT),
+        ('tags', TEXT),
+        ('dimensions', TEXT),
+        ('attributes', TEXT),
+        ('notes', TEXT),
+        ('codelists', TEXT),
+        ], 
         name="fulltext",
         default_language="english", 
-        weights= { "key": 100, "name": 98, "dataset_code": 97, "provider_name": 96, "tags":95, "dimensions": 90, "attributes": 80 }, 
+        weights= {
+            "notes":1, 
+            "key": 2, 
+            "attributes": 2,
+            "tags":3, 
+            "dataset_code": 4, 
+            "dimensions": 4, 
+            "codelists": 4,
+            "name": 5, 
+        }, 
         background=background)
     
     db[constants.COL_SERIES].create_index([
@@ -148,9 +177,8 @@ def create_or_update_indexes(db, force_mode=False, background=True):
         name="series7", background=background)
 
     db[constants.COL_SERIES].create_index([
-        ("start_ts", ASCENDING),        
-        ("end_ts", ASCENDING)], 
-        name="series8", background=background)
+        ("dataset_code", ASCENDING)], 
+        name="series9", background=background)
 
     '''********* TAGS ***********'''
 
@@ -175,6 +203,8 @@ def create_or_update_indexes(db, force_mode=False, background=True):
         partialFilterExpression={"count_series": {"$exists": True}})
 
     UPDATE_INDEXES = True
+    
+    
 
 def configure_logging(debug=False, stdout_enable=True, config_file=None,
                       level="INFO"):
