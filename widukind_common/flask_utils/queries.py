@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from collections import OrderedDict
 import math
 from datetime import datetime
 from pprint import pprint
@@ -51,7 +52,7 @@ def col_stats_run(db=None):
     db = db or current_app.widukind_db
     return db[constants.COL_STATS_RUN].with_options(read_preference=ReadPreference.SECONDARY)
 
-def complex_queries_series(query={}, 
+def complex_queries_series(query=OrderedDict(), 
                            search_attributes=True, 
                            bypass_args=['limit', 
                                         'tags', 
