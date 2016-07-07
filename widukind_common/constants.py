@@ -14,6 +14,8 @@ COL_DATASETS = "datasets"
 
 COL_SERIES = "series"
 
+COL_SERIES_ARCHIVES = "series_archives"
+
 COL_TAGS = "tags"
 
 COL_LOCK = "lock"
@@ -31,6 +33,7 @@ COL_ALL = [
     COL_PROVIDERS,
     COL_DATASETS,
     COL_SERIES,
+    COL_SERIES_ARCHIVES,
     COL_TAGS,
     COL_LOCK,
     COL_COUNTERS,
