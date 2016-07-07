@@ -1,3 +1,5 @@
+-r default.txt
+-r web.txt
 nose
 coverage
 flake8
