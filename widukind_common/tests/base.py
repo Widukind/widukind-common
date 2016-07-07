@@ -59,7 +59,7 @@ class BaseDBTestCase(BaseTestCase):
         create_or_update_indexes(self.db, force_mode=True, background=False)
         
     def clean_db(self):
-        utils.clean_mongodb(self.db)
+        utils.clean_mongodb(db=self.db)
         
     def _collections_is_empty(self):
         for col in constants.COL_ALL:

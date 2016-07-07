@@ -11,6 +11,11 @@ import arrow
 from pymongo import MongoClient
 from pymongo import ASCENDING, DESCENDING, TEXT
 from pymongo.errors import AutoReconnect
+from bson import json_util
+
+import six
+import zlib
+import base64
 
 from widukind_common import constants
 
@@ -59,6 +64,7 @@ def create_or_update_indexes(db, force_mode=False, background=False):
     
     '''********* CALENDARS ********'''
 
+    logger.info("create calendars indexes...")
     if not constants.COL_CALENDARS in indexes or not "key_idx" in indexes[constants.COL_CALENDARS]:
         db[constants.COL_CALENDARS].create_index([
             ("key", ASCENDING)], 
@@ -67,6 +73,8 @@ def create_or_update_indexes(db, force_mode=False, background=False):
         pass
 
     '''********* PROVIDERS ********'''
+
+    logger.info("create providers indexes...")
 
     db[constants.COL_PROVIDERS].create_index([
         ("slug", ASCENDING)], 
@@ -78,6 +86,8 @@ def create_or_update_indexes(db, force_mode=False, background=False):
         background=background)
 
     '''********* CATEGORIES *******'''
+
+    logger.info("create categories indexes...")
 
     db[constants.COL_CATEGORIES].create_index([
         ("slug", ASCENDING)], 
@@ -94,6 +104,8 @@ def create_or_update_indexes(db, force_mode=False, background=False):
     #    name="tags_idx", background=background)
 
     '''********* DATASETS *********'''
+    
+    logger.info("create datasets indexes...")
     
     db[constants.COL_DATASETS].create_index([
         ("slug", ASCENDING)], 
@@ -120,6 +132,8 @@ def create_or_update_indexes(db, force_mode=False, background=False):
         partialFilterExpression={"enable": False})
 
     '''********* SERIES *********'''
+
+    logger.info("create series indexes...")
 
     db[constants.COL_SERIES].create_index([
         ("slug", ASCENDING)], 
@@ -179,6 +193,24 @@ def create_or_update_indexes(db, force_mode=False, background=False):
     db[constants.COL_SERIES].create_index([
         ("dataset_code", ASCENDING)], 
         name="series9", background=background)
+
+    '''********* SERIES ARCHIVES *********'''
+
+    logger.info("create series_archives indexes...")
+
+    db[constants.COL_SERIES_ARCHIVES].create_index([
+        ("slug", ASCENDING),
+        ("version", DESCENDING)], 
+        name="slug_idx", background=background)
+
+    """
+    db[constants.COL_SERIES_ARCHIVES].create_index([
+        ('provider_name', ASCENDING), 
+        ("dataset_code", ASCENDING),
+        ("key", ASCENDING)], 
+        name="series1", 
+        background=background)
+    """
 
     '''********* TAGS ***********'''
 
@@ -330,3 +362,23 @@ def retry_on_reconnect_error(retry_count=2, exponential_delay=True):
             raise Exception(msg)
         return decorated_function
     return decorator
+
+def series_archives_store(series):
+    '''Compress one series document for store in mongodb'''
+    slug = series.pop("slug")
+    version = series.pop("version", 0)
+    store = {
+        "slug": slug,
+        "version": version,
+        "datas": zlib.compress(json_util.dumps(series).encode())
+    }
+    return store
+
+def series_archives_load(store):
+    '''Uncompress series archives and return dict'''
+    series = json_util.loads(zlib.decompress(store['datas']).decode())
+    series["slug"] = store["slug"]
+    series["version"] = store["version"]
+    return series
+    
+

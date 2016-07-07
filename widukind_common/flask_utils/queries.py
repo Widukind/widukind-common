@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from collections import OrderedDict
 import math
 from datetime import datetime
 from pprint import pprint
@@ -16,6 +17,7 @@ __all__ = [
     'col_datasets',
     'col_categories',
     'col_series',
+    'col_series_archives',
     'col_counters',
     
     'complex_queries_series',
@@ -43,6 +45,10 @@ def col_series(db=None):
     db = db or current_app.widukind_db
     return db[constants.COL_SERIES].with_options(read_preference=ReadPreference.SECONDARY)
 
+def col_series_archives(db=None):
+    db = db or current_app.widukind_db
+    return db[constants.COL_SERIES_ARCHIVES].with_options(read_preference=ReadPreference.SECONDARY)
+
 def col_counters(db=None):
     db = db or current_app.widukind_db
     return db[constants.COL_COUNTERS].with_options(read_preference=ReadPreference.SECONDARY)
@@ -51,7 +57,7 @@ def col_stats_run(db=None):
     db = db or current_app.widukind_db
     return db[constants.COL_STATS_RUN].with_options(read_preference=ReadPreference.SECONDARY)
 
-def complex_queries_series(query={}, 
+def complex_queries_series(query=OrderedDict(), 
                            search_attributes=True, 
                            bypass_args=['limit', 
                                         'tags', 

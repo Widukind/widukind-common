@@ -68,6 +68,11 @@ class PyMongoSessionInterface(SessionInterface):
             background=True,
             expireAfterSeconds=self.expireAfterSeconds)
 
+        self.col.create_index([
+            ("sid", ASCENDING)], 
+            name="sid_idx", 
+            background=True)
+
     def get_expiration_time(self, app, session):
         if session.permanent:
             return app.permanent_session_lifetime
