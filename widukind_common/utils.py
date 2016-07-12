@@ -203,14 +203,11 @@ def create_or_update_indexes(db, force_mode=False, background=False):
         ("version", DESCENDING)], 
         name="slug_idx", background=background)
 
-    """
     db[constants.COL_SERIES_ARCHIVES].create_index([
         ('provider_name', ASCENDING), 
-        ("dataset_code", ASCENDING),
-        ("key", ASCENDING)], 
+        ("dataset_code", ASCENDING)], 
         name="series1", 
         background=background)
-    """
 
     '''********* TAGS ***********'''
 
@@ -365,11 +362,11 @@ def retry_on_reconnect_error(retry_count=2, exponential_delay=True):
 
 def series_archives_store(series):
     '''Compress one series document for store in mongodb'''
-    slug = series.pop("slug")
-    version = series.pop("version", 0)
     store = {
-        "slug": slug,
-        "version": version,
+        "slug": series.pop("slug"),
+        "version": series.pop("version", 0),
+        "provider_name": series["provider_name"],
+        "dataset_code": series["dataset_code"],
         "datas": zlib.compress(json_util.dumps(series).encode())
     }
     return store
