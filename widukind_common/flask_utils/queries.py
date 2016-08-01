@@ -31,31 +31,31 @@ __all__ = [
 
 def col_providers(db=None):
     db = db or current_app.widukind_db
-    return db[constants.COL_PROVIDERS].with_options(read_preference=ReadPreference.SECONDARY)
+    return db[constants.COL_PROVIDERS].with_options(read_preference=ReadPreference.SECONDARY_PREFERRED)
 
 def col_datasets(db=None):
     db = db or current_app.widukind_db
-    return db[constants.COL_DATASETS].with_options(read_preference=ReadPreference.SECONDARY)
+    return db[constants.COL_DATASETS].with_options(read_preference=ReadPreference.SECONDARY_PREFERRED)
 
 def col_categories(db=None):
     db = db or current_app.widukind_db
-    return db[constants.COL_CATEGORIES].with_options(read_preference=ReadPreference.SECONDARY)
+    return db[constants.COL_CATEGORIES].with_options(read_preference=ReadPreference.SECONDARY_PREFERRED)
 
 def col_series(db=None):
     db = db or current_app.widukind_db
-    return db[constants.COL_SERIES].with_options(read_preference=ReadPreference.SECONDARY)
+    return db[constants.COL_SERIES].with_options(read_preference=ReadPreference.SECONDARY_PREFERRED)
 
 def col_series_archives(db=None):
     db = db or current_app.widukind_db
-    return db[constants.COL_SERIES_ARCHIVES].with_options(read_preference=ReadPreference.SECONDARY)
+    return db[constants.COL_SERIES_ARCHIVES].with_options(read_preference=ReadPreference.SECONDARY_PREFERRED)
 
 def col_counters(db=None):
     db = db or current_app.widukind_db
-    return db[constants.COL_COUNTERS].with_options(read_preference=ReadPreference.SECONDARY)
+    return db[constants.COL_COUNTERS].with_options(read_preference=ReadPreference.SECONDARY_PREFERRED)
 
 def col_stats_run(db=None):
     db = db or current_app.widukind_db
-    return db[constants.COL_STATS_RUN].with_options(read_preference=ReadPreference.SECONDARY)
+    return db[constants.COL_STATS_RUN].with_options(read_preference=ReadPreference.SECONDARY_PREFERRED)
 
 def complex_queries_series(query=OrderedDict(), 
                            search_attributes=True, 
