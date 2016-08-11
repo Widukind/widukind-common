@@ -55,6 +55,7 @@ CACHE_FREQUENCY = [
     "W-THU",
     "W-FRI",
     "W-SAT",
+    "S",
     #"D", 
 ]
 
@@ -65,6 +66,7 @@ FREQ_WEEKLY = "W"
 FREQ_WEEKLY_WED = "W-WED"
 FREQ_DAILY = "D"
 FREQ_HOURLY = "H"
+FREQ_SEMIANNUALLY = "S"
 
 FREQUENCIES = (
     (FREQ_ANNUALY, "Annually"),
@@ -74,32 +76,10 @@ FREQUENCIES = (
     (FREQ_WEEKLY_WED, "Weekly Wednesday"),
     (FREQ_DAILY, "Daily"),
     (FREQ_HOURLY, "Hourly"),
+    (FREQ_SEMIANNUALLY, "SemiAnnually")
 )
 
 FREQUENCIES_DICT = dict(FREQUENCIES)
-
-"""
-FREQUENCIES_CONVERT = {
-    'Annually': 'A',
-    'annually': 'A',
-    'Monthly': 'M',
-    'monthly': 'M',
-    'Quarterly': 'Q',
-    'quarterly': 'Q',
-    'Weekly': 'W',
-    'weekly': 'W',
-    'Daily': 'D',
-    'daily': 'D',
-    'Hourly': 'H',
-    'hourly': 'H',
-    'a': 'A',
-    'q': 'Q',
-    'm': 'M',
-    'w': 'W',
-    'd': 'D',
-    'h': 'H',
-}
-"""
 
 # nltk stopwords
 # http://www.nltk.org/data.html
