@@ -28,6 +28,9 @@ class MaxErrors(DlstatsException):
 class InterruptProcessSeriesData(DlstatsException):
     pass
 
+class InterruptBatchSeriesData(DlstatsException):
+    pass
+
 class SeriesException(DlstatsException):
 
     def __init__(self, *args, **kwargs):
