@@ -9,7 +9,7 @@ setup(
     version=version.version_str(),
     description='Shared tools for Widukind Projects',
     author='Widukind team',
-    url='https://github.com/Widukind/widukind-common',
+    url='https://git.nomics.world/dbnomics/widukind-common',
     license='AGPLv3',
     packages=find_packages(),
     include_package_data=True

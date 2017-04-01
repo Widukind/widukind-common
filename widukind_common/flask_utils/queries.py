@@ -13,19 +13,19 @@ from pymongo.cursor import Cursor
 from widukind_common import constants
 
 __all__ = [
-    'col_providers',       
+    'col_providers',
     'col_datasets',
     'col_categories',
     'col_series',
     'col_series_archives',
     'col_counters',
-    
+
     'complex_queries_series',
-    
+
     'get_provider',
     'get_dataset',
     'col_stats_run',
-    
+
     'Pagination',
 ]
 
@@ -57,21 +57,21 @@ def col_stats_run(db=None):
     db = db or current_app.widukind_db
     return db[constants.COL_STATS_RUN].with_options(read_preference=ReadPreference.SECONDARY_PREFERRED)
 
-def complex_queries_series(query=OrderedDict(), 
-                           search_attributes=True, 
-                           bypass_args=['limit', 
-                                        'tags', 
-                                        'provider', 
+def complex_queries_series(query=OrderedDict(),
+                           search_attributes=True,
+                           bypass_args=['limit',
+                                        'tags',
+                                        'provider',
                                         'dataset',
                                         'per_page',
                                         'page',
                                         'format']):
 
     tags = request.args.get('tags', None)
-    
+
     search_fields = []
     query_and = []
-    
+
     for r in request.args.lists():
         if r[0] in bypass_args:
             continue
@@ -87,18 +87,18 @@ def complex_queries_series(query=OrderedDict(),
         #tags_regexp = [re.compile('.*%s.*' % e, re.IGNORECASE) for e in tags]
         #query["tags"] = {"$all": tags_regexp}
         query_and.append({"$and": conditions})
-        
+
     if search_fields:
-        
+
         query_or_by_field = {}
         query_nor_by_field = {}
 
         for field, value in search_fields:
             values = value.split()
             value = [v.lower().strip() for v in values]
-            
+
             dim_field = field.lower()
-            
+
             for v in value:
                 if v.startswith("!"):
                     if not dim_field in query_nor_by_field:
@@ -108,14 +108,14 @@ def complex_queries_series(query=OrderedDict(),
                     if not dim_field in query_or_by_field:
                         query_or_by_field[dim_field] = []
                     query_or_by_field[dim_field].append(v)
-        
+
         for key, values in query_or_by_field.items():
             q_or = {"$or": [
                 {"dimensions.%s" % key: {"$in": values}},
             ]}
             if search_attributes:
                 q_or["$or"].append({"attributes.%s" % key: {"$in": values}})
-                
+
             query_and.append(q_or)
 
         for key, values in query_nor_by_field.items():
@@ -124,25 +124,25 @@ def complex_queries_series(query=OrderedDict(),
             ]}
             if search_attributes:
                 q_or["$nor"].append({"attributes.%s" % key: {"$in": values}})
-            
+
             query_and.append(q_or)
 
     if query_and:
         query["$and"] = query_and
-            
+
     print("-----complex query-----")
-    pprint(query)    
+    pprint(query)
     print("-----------------------")
-        
+
     return query
-    
+
 def get_provider(slug, projection=None):
     projection = projection or {"_id": False}
-    provider_doc = col_providers().find_one({'slug': slug, "enable": True}, 
+    provider_doc = col_providers().find_one({'slug': slug, "enable": True},
                                             projection=projection)
     if not provider_doc:
         abort(404)
-        
+
     return provider_doc
 
 def get_dataset(slug, projection=None):
@@ -153,14 +153,14 @@ def get_dataset(slug, projection=None):
         ds_projection["enable"] = True
     dataset_doc = col_datasets().find_one({"slug": slug},
                                           ds_projection)
-    
+
     if not dataset_doc:
         abort(404)
     if dataset_doc["enable"] is False:
         abort(307, "disable dataset.")
-        
+
     return dataset_doc
-    
+
 class Pagination(object):
 
     def __init__(self, iterable, page, per_page):
