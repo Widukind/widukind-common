@@ -81,6 +81,11 @@ def consolidate_dataset(provider_name=None, dataset_code=None, db=None, execute=
 
     projection = {"_id": True, "concepts": True, "codelists": True, "dimension_keys": True, "attribute_keys": True}
     dataset = db[constants.COL_DATASETS].find_one(query, projection)
+    if dataset is None:
+        if execute:
+            return None
+        else:
+            return None, None
 
     old_codelists = dataset.get("codelists") or {}
     old_concepts = dataset.get("concepts") or {}
