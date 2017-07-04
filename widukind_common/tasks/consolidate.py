@@ -20,45 +20,45 @@ def _run_bulk(db, bulk_requests):
         logger.critical(str(err))
 
 def hash_dict(d):
-    return hashlib.sha1(json.dumps(d, sort_keys=True).encode()).hexdigest()     
-    
+    return hashlib.sha1(json.dumps(d, sort_keys=True).encode()).hexdigest()
+
 def consolidate_all_dataset(provider_name=None, db=None, max_bulk=20):
-    
+
     db = db or utils.get_mongo_db()
-    
+
     query = {"provider_name": provider_name}
     projection = {"_id": True, "dataset_code": True}
-    
+
     cursor = db[constants.COL_DATASETS].find(query, projection)
     dataset_codes = [doc["dataset_code"] for doc in cursor]
 
     bulk_requests = db[constants.COL_DATASETS].initialize_unordered_bulk_op()
     bulk_size = 0
     results = []
-    
+
     for dataset_code in dataset_codes:
-        
+
         query, query_modify = consolidate_dataset(provider_name, dataset_code, db=db, execute=False)
-        
+
         if not query:
             logger.warning("bypass dataset [%s]" % dataset_code)
             continue
-        
+
         bulk_size += 1
         bulk_requests.find(query).update_one(query_modify)
-    
+
         if bulk_size > max_bulk:
             result = _run_bulk(db, bulk_requests)
             if result:
                 results.append(result)
             bulk_requests = db[constants.COL_DATASETS].initialize_unordered_bulk_op()
             bulk_size = 0
-    
+
     if bulk_size > 0:
         result = _run_bulk(db, bulk_requests)
         if result:
             results.append(result)
-        
+
     results_details = {
         "matched_count": 0,
         "modified_count": 0,
@@ -71,36 +71,36 @@ def consolidate_all_dataset(provider_name=None, db=None, max_bulk=20):
 
 def consolidate_dataset(provider_name=None, dataset_code=None, db=None, execute=True):
     db = db or utils.get_mongo_db()
-    
+
     logger.info("START consolidate provider[%s] - dataset[%s]" % (provider_name, dataset_code))
-    
+
     query = {"provider_name": provider_name, "dataset_code": dataset_code}
     projection = {"_id": False, "dimensions": True, "attributes": True, "values.attributes": True}
-    
+
     cursor = db[constants.COL_SERIES].find(query, projection)
 
-    projection = {"_id": True, "concepts": True, "codelists": True, "dimension_keys": True, "attribute_keys": True}             
+    projection = {"_id": True, "concepts": True, "codelists": True, "dimension_keys": True, "attribute_keys": True}
     dataset = db[constants.COL_DATASETS].find_one(query, projection)
     
     codelists = {}
-    
+
     for series in cursor:
         for k, v in series.get("dimensions").items():
             if not k in codelists: codelists[k] = []
             if not v in codelists[k]: codelists[k].append(v)
-        
+
         if series.get("attributes"):
             for k, v in series.get("attributes").items():
                 if not k in codelists: codelists[k] = []
                 if not v in codelists[k]: codelists[k].append(v)
-            
+
         for v in series.get("values"):
             if v.get("attributes"):
                 for k1, v1 in v.get("attributes").items():
                     if not k1 in dataset["codelists"]: continue
                     if not k1 in codelists: codelists[k1] = []
                     if not v1 in codelists[k1]: codelists[k1].append(v1)
-    
+
     if logger.isEnabledFor(logging.DEBUG):
         for k, v in dataset["codelists"].items():
             logger.debug("BEFORE - codelist[%s]: %s" % (k, len(v)))
@@ -166,9 +166,9 @@ def consolidate_dataset(provider_name=None, dataset_code=None, db=None, execute=
         "dimension_keys": dimension_keys,
         "attribute_keys": attribute_keys
     }}
-    
+
     if execute:
         return db[constants.COL_DATASETS].update_one(query, query_modify).modified_count
     else:
         return query, query_modify
-    
+
