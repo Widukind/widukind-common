@@ -81,7 +81,12 @@ def consolidate_dataset(provider_name=None, dataset_code=None, db=None, execute=
 
     projection = {"_id": True, "concepts": True, "codelists": True, "dimension_keys": True, "attribute_keys": True}
     dataset = db[constants.COL_DATASETS].find_one(query, projection)
-    
+
+    old_codelists = dataset.get("codelists") or {}
+    old_concepts = dataset.get("concepts") or {}
+    old_dimension_keys = dataset.get("dimension_keys") or []
+    old_attribute_keys = dataset.get("attribute_keys") or []
+
     codelists = {}
 
     for series in cursor:
@@ -97,23 +102,23 @@ def consolidate_dataset(provider_name=None, dataset_code=None, db=None, execute=
         for v in series.get("values"):
             if v.get("attributes"):
                 for k1, v1 in v.get("attributes").items():
-                    if not k1 in dataset["codelists"]: continue
+                    if not k1 in old_codelists: continue
                     if not k1 in codelists: codelists[k1] = []
                     if not v1 in codelists[k1]: codelists[k1].append(v1)
 
     if logger.isEnabledFor(logging.DEBUG):
-        for k, v in dataset["codelists"].items():
+        for k, v in old_codelists.items():
             logger.debug("BEFORE - codelist[%s]: %s" % (k, len(v)))
-        logger.debug("BEFORE - concepts[%s]" % list(dataset["concepts"].keys()))
-        logger.debug("BEFORE - dimension_keys[%s]" % dataset["dimension_keys"])
-        logger.debug("BEFORE - attribute_keys[%s]" % dataset["attribute_keys"])
-    
+        logger.debug("BEFORE - concepts[%s]" % list(old_concepts.keys()))
+        logger.debug("BEFORE - dimension_keys[%s]" % old_dimension_keys)
+        logger.debug("BEFORE - attribute_keys[%s]" % old_attribute_keys)
+
     new_codelists = {}
     new_concepts = {}
     new_dimension_keys = []
     new_attribute_keys = []
-    
-    for k, values in dataset["codelists"].items():
+
+    for k, values in old_codelists.items():
         '''if entry in codelists from series'''
         if k in codelists:
             new_values = {}
@@ -121,21 +126,21 @@ def consolidate_dataset(provider_name=None, dataset_code=None, db=None, execute=
                 '''if codelist value in codelists from dataset'''
                 if v1 in values:
                     new_values[v1] = values[v1]
-            
+
             new_codelists[k] = new_values
-            new_concepts[k] = dataset["concepts"].get(k)
-            
-            if k in dataset["dimension_keys"]:
+            new_concepts[k] = old_concepts.get(k)
+
+            if k in old_dimension_keys:
                 '''unordered dimension_keys'''
                 new_dimension_keys.append(k)
-            elif k in dataset["attribute_keys"]:
+            elif k in old_attribute_keys:
                 '''unordered attribute_keys'''
                 new_attribute_keys.append(k)
-    
+
     '''original ordered for dimension_keys'''
-    dimension_keys = [k for k in dataset["dimension_keys"] if k in new_dimension_keys]
+    dimension_keys = [k for k in old_dimension_keys if k in new_dimension_keys]
     '''original ordered for attribute_keys'''
-    attribute_keys = [k for k in dataset.get("attribute_keys") if k in new_attribute_keys]
+    attribute_keys = [k for k in old_attribute_keys if k in new_attribute_keys]
 
     if logger.isEnabledFor(logging.DEBUG):
         for k, v in new_codelists.items():
@@ -145,14 +150,14 @@ def consolidate_dataset(provider_name=None, dataset_code=None, db=None, execute=
         logger.debug("AFTER - attribute_keys[%s]" % attribute_keys)
 
     '''verify change in codelists'''
-    #is_modify = hash_dict(new_codelists) == hash_dict(dataset["codelists"])
-    is_modify = new_codelists != dataset["codelists"]
+    #is_modify = hash_dict(new_codelists) == hash_dict(old_codelists)
+    is_modify = new_codelists != old_codelists
 
     '''verify change in concepts'''
-    #if not is_modify and hash_dict(new_concepts) != hash_dict(dataset["concepts"]):
-    if is_modify is False and new_concepts != dataset["concepts"]:
+    #if not is_modify and hash_dict(new_concepts) != hash_dict(old_concepts):
+    if is_modify is False and new_concepts != old_concepts:
         is_modify = True
-    
+
     if is_modify is False:
         if execute:
             return None
@@ -161,14 +166,13 @@ def consolidate_dataset(provider_name=None, dataset_code=None, db=None, execute=
 
     query = {"_id": dataset["_id"]}
     query_modify = {"$set": {
-        "codelists": new_codelists, 
-        "concepts": new_concepts,
-        "dimension_keys": dimension_keys,
-        "attribute_keys": attribute_keys
+        "codelists": new_codelists or None,
+        "concepts": new_concepts or None,
+        "dimension_keys": dimension_keys or None,
+        "attribute_keys": attribute_keys or None,
     }}
 
     if execute:
         return db[constants.COL_DATASETS].update_one(query, query_modify).modified_count
     else:
         return query, query_modify
-
